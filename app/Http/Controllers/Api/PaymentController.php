@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
+use App\Models\Payment;
+use App\Models\Sale;
+use App\Services\LicenseService;
+use Illuminate\Http\Request;
+
+class PaymentController extends Controller
+{
+    public function __construct(protected LicenseService $license) {}
+
+    public function index(Request $request)
+    {
+        $query = Payment::with('sale.flat');
+        if ($request->user()->isEmployee()) {
+            $query->whereHas('sale', fn ($q) => $q->where('employee_id', $request->user()->id));
+        }
+        return $query->latest()->get();
+    }
+
+    public function store(Request $request)
+    {
+        $this->license->guard(); // financial write — per-action re-check
+
+        $data = $request->validate([
+            'sale_id' => 'required|exists:sales,id',
+            'amount' => 'required|numeric|min:0.01',
+            'date' => 'required|date',
+            'method' => 'required|string|max:100',
+        ]);
+
+        $sale = Sale::findOrFail($data['sale_id']);
+        if ($sale->status !== 'confirmed') {
+            return response()->json(['message' => 'Sale is not confirmed yet.'], 422);
+        }
+        if ($data['amount'] > $sale->dueAmount()) {
+            return response()->json(['message' => 'Payment exceeds due amount.'], 422);
+        }
+
+        $payment = Payment::create([...$data, 'recorded_by' => $request->user()->id]);
+
+        ActivityLog::record($request->user(), 'Payment Recorded', "{$sale->flat->flat_no} — {$data['amount']} ({$data['method']})");
+        return response()->json($payment, 201);
+    }
+}

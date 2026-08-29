@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f6fb;
+  --foreground: #1e2532;
+
+  /* Brand palette — navy + gold, matching the roadmap's corporate identity.
+     Status colors (Available/Land Owner/Sold CR/etc.) live in lib/status.js
+     and are never touched here — they carry real business meaning. */
+  --brand-navy: #1f3864;
+  --brand-navy-deep: #0d1930;
+  --brand-navy-mid: #16294a;
+  --brand-gold: #b7860b;
+  --brand-gold-light: #e0ac2b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layered, premium card shadow — softer + more depth than a flat shadow-sm */
+.shadow-premium {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 6px 16px -4px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.03);
+}
+
+.shadow-premium-lg {
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 16px 32px -8px rgba(15, 23, 42, 0.14),
+    0 0 0 1px rgba(15, 23, 42, 0.03);
+}
+
+.sidebar-gradient {
+  background: linear-gradient(180deg, var(--brand-navy-mid) 0%, var(--brand-navy-deep) 100%);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, var(--brand-gold-light) 0%, var(--brand-gold) 100%);
+}
+
+/* Custom scrollbar for the dark sidebar nav */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
