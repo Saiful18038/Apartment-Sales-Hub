@@ -3,15 +3,31 @@
  * fallback matching the `asset_statuses` table seeded by DemoDataSeeder.php
  * on the API (the actual single source of truth per §2.2), so the UI still
  * renders correctly even before /api/flats' embedded status data loads.
+ *
+ * "Premium Color System" pass — one deliberate hue per status (Emerald =
+ * Available, Indigo = Land Owner, Red = Sold, Violet = Re-Sale, Amber =
+ * Asset Booked) instead of the old muted/randomized fills, so status is the
+ * only thing color communicates on the floor-map (everything else — Address,
+ * Basic Information, financials — stays neutral slate; see InfoBox in
+ * app/(app)/flats/page.js). `border` doubles as the chart-series color on
+ * the dashboard's bar chart (STATUS[code].border), so this exact 7-color,
+ * ordered set (matching STATUS_ORDER below) is validated with
+ * dataviz/scripts/validate_palette.js for adjacent colorblind- and
+ * normal-vision separation — re-run that validator before changing any hue.
+ * Sold (CR) and Sold (OS/SS) are deliberately different hues (red / teal)
+ * rather than two shades of one red: they sit next to each other in every
+ * legend and chart, and every badge already carries its own text label, so
+ * color only needs to signal "which sold sub-type", not fight for the same
+ * hue at low-Delta-E — see the validator's normal-vision floor.
  */
 export const STATUS = {
-  AVAILABLE: { label: "Available", fill: "#FFFFFF", border: "#CBD5E1", text: "#334155", sellable: true },
-  LAND_OWNER: { label: "Land Owner", fill: "#C6E0B4", border: "#8FAE7C", text: "#284616", sellable: false },
-  SOLD_CR: { label: "Sold (CR)", fill: "#FFE699", border: "#D8B84A", text: "#5C4A08", sellable: false },
-  SOLD_OS_SS: { label: "Sold (OS/SS)", fill: "#BDD7EE", border: "#6FA8DC", text: "#1B4A6B", sellable: false },
-  RESALE_RR: { label: "Re-Sale (RR)", fill: "#F4C7DE", border: "#D888AE", text: "#7A1E48", sellable: true },
-  ASSET_BOOKED: { label: "Asset Booked", fill: "#FBD5A5", border: "#E0A458", text: "#6B3E07", sellable: false },
-  READY: { label: "Ready Apartment", fill: "#FFFFFF", border: "#DC2626", text: "#DC2626", sellable: true },
+  AVAILABLE: { label: "Available", fill: "#ECFDF5", border: "#059669", text: "#065F46", sellable: true },
+  LAND_OWNER: { label: "Land Owner", fill: "#EEF2FF", border: "#4F46E5", text: "#3730A3", sellable: false },
+  SOLD_CR: { label: "Sold (CR)", fill: "#FEF2F2", border: "#DC2626", text: "#991B1B", sellable: false },
+  SOLD_OS_SS: { label: "Sold (OS/SS)", fill: "#F0FDFA", border: "#0D9488", text: "#115E59", sellable: false },
+  RESALE_RR: { label: "Re-Sale (RR)", fill: "#F5F3FF", border: "#7C3AED", text: "#5B21B6", sellable: true },
+  ASSET_BOOKED: { label: "Asset Booked", fill: "#FFFBEB", border: "#D97706", text: "#92400E", sellable: false },
+  READY: { label: "Ready Apartment", fill: "#FFFFFF", border: "#991B1B", text: "#991B1B", sellable: true },
 };
 
 export const STATUS_ORDER = ["AVAILABLE", "LAND_OWNER", "SOLD_CR", "SOLD_OS_SS", "RESALE_RR", "ASSET_BOOKED", "READY"];

@@ -25,19 +25,22 @@ function FloorRow({ label, children }) {
 }
 
 /**
- * Non-status info box (Address / project note / handover) — a decorative
- * accent tone, deliberately NOT reusing any of the 7 real status colors
- * from lib/status.js so it can never be mistaken for a flat's status.
+ * Non-status info box (Address / financials / facing-handover) — "Premium
+ * Color System" pass: every one of these is pure neutral slate, never a
+ * decorative accent color, so color on the card means exactly one thing
+ * (a flat's status, from lib/status.js) and nothing here can be mistaken
+ * for one. `emphasis` carries visual weight via a darker border/text, not
+ * hue, for the box that shows money (Parking/Utility).
  */
 function InfoBox({ tone = "slate", title, subtitle }) {
   const tones = {
-    slate: "bg-slate-100 border-slate-200 text-slate-600",
-    peach: "bg-[#ffebe6] border-[#ffbdad] text-[#bf2600]",
+    slate: "bg-slate-50 border-slate-200 text-slate-500",
+    emphasis: "bg-slate-100 border-slate-300 text-slate-700",
   };
   return (
     <div className={`rounded-[10px] border px-2.5 py-2 text-center ${tones[tone]}`}>
-      {title && <div className="text-[12px] font-bold leading-[1.3]">{title}</div>}
-      {subtitle && <div className={`text-[11px] leading-[1.3] opacity-80 ${title ? "mt-0.5" : ""}`}>{subtitle}</div>}
+      {title && <div className="text-[12px] font-bold leading-[1.3] text-slate-700">{title}</div>}
+      {subtitle && <div className={`text-[11px] leading-[1.3] ${title ? "mt-0.5 opacity-80" : ""}`}>{subtitle}</div>}
     </div>
   );
 }
@@ -133,8 +136,8 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
           </FloorRow>
         </div>
         <FloorRow label="">
-          <div className="rounded-[10px] border bg-[#ffebe6] border-[#ffbdad] text-[#bf2600] px-2.5 py-2 text-center">
-            <div className="text-[11px] opacity-80 leading-[1.3]">{project.name}</div>
+          <div className="rounded-[10px] border border-slate-300 bg-slate-100 text-slate-700 px-2.5 py-2 text-center">
+            <div className="text-[11px] text-slate-400 leading-[1.3]">{project.name}</div>
             {sorted[0] && (
               <>
                 <div className="text-[12px] font-bold leading-[1.3] mt-0.5">Parking {fmtLac(sorted[0].parking_charge)} Lac</div>
@@ -144,7 +147,7 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
           </div>
         </FloorRow>
         <FloorRow label="">
-          <InfoBox tone="peach" subtitle={`${project.road_facing || "—"}/Handover ${project.handover || "—"}`} />
+          <InfoBox tone="slate" subtitle={`${project.road_facing || "—"}/Handover ${project.handover || "—"}`} />
         </FloorRow>
       </div>
 
