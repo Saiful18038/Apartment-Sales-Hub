@@ -30,4 +30,4 @@ php artisan migrate --force --seed
 
 php artisan storage:link >/dev/null 2>&1 || true
 
-exec php artisan serve --host=0.0.0.0 --port="${PORT:-10000}"
+exec php -S 0.0.0.0:"${PORT:-10000}" server.php
