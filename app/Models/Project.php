@@ -8,7 +8,7 @@ class Project extends Model
 {
     protected $fillable = [
         'zone_id', 'type', 'name', 'code', 'address', 'road_facing',
-        'land_katha', 'total_floors', 'status', 'handover',
+        'land_katha', 'total_floors', 'status', 'handover', 'launch_date',
     ];
 
     public function zone()  { return $this->belongsTo(Zone::class); }

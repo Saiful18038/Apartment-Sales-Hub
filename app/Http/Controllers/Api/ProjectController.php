@@ -30,6 +30,7 @@ class ProjectController extends Controller
             'total_floors' => 'nullable|integer|min:0',
             'status' => 'required|in:Planning,Ongoing,Completed,Suspended,Archived',
             'handover' => 'nullable|string|max:255',
+            'launch_date' => 'nullable|string|max:255',
         ]);
         $project = Project::create($data);
         ActivityLog::record($request->user(), 'Project Created', $project->name);
@@ -49,6 +50,7 @@ class ProjectController extends Controller
             'total_floors' => 'nullable|integer|min:0',
             'status' => 'sometimes|in:Planning,Ongoing,Completed,Suspended,Archived',
             'handover' => 'nullable|string|max:255',
+            'launch_date' => 'nullable|string|max:255',
         ]);
         $project->update($data);
         ActivityLog::record($request->user(), 'Project Updated', $project->name);

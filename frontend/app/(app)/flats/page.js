@@ -43,7 +43,7 @@ function InfoBox({ tone = "slate", title, subtitle }) {
 }
 
 /** One project's full floor-map card — one "grid part" in the 4-column layout. */
-function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat }) {
+function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, onShowInfo }) {
   const sorted = flats.slice().sort((a, b) => b.floor - a.floor);
   const floors = [...new Set(sorted.map((f) => f.floor))].sort((a, b) => b - a);
 
@@ -115,6 +115,18 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat }) 
         ))}
         {sorted.length === 0 && <EmptyState text="No flats yet" />}
 
+        {/* Hand-over Date / Launch Date / Facing — visible to every role
+            (owner, admin, employee); only edited via the Add/Edit Project
+            form, which stays owner/admin-only. */}
+        <FloorRow label="">
+          <button
+            onClick={() => onShowInfo(project)}
+            className="w-full rounded-[10px] border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[12px] font-semibold py-1.5 transition"
+          >
+            Basic Information
+          </button>
+        </FloorRow>
+
         <div className="pt-1">
           <FloorRow label="Addr">
             <InfoBox tone="slate" title={project.address || "—"} />
@@ -157,6 +169,7 @@ export default function FlatsPage() {
   const [addProjectId, setAddProjectId] = useState(null);
   const [saveError, setSaveError] = useState("");
   const [detail, setDetail] = useState(null);
+  const [infoProject, setInfoProject] = useState(null);
 
   // Filtering system — same Location/Status/Type/Search filter bar as /projects,
   // filtering which project cards show in the grid.
@@ -308,6 +321,7 @@ export default function FlatsPage() {
                 canEdit={canEdit}
                 onAddFlat={() => openNew(project.id)}
                 onSelectFlat={setDetail}
+                onShowInfo={setInfoProject}
               />
             ))}
           </div>
@@ -380,6 +394,16 @@ export default function FlatsPage() {
           </Modal>
         );
       })()}
+
+      {infoProject && (
+        <Modal title={`${infoProject.name} — Basic Information`} onClose={() => setInfoProject(null)}>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-slate-500">Hand-over Date</span><span>{infoProject.handover || "—"}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Launch Date</span><span>{infoProject.launch_date || "—"}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Facing</span><span>{infoProject.road_facing || "—"}</span></div>
+          </div>
+        </Modal>
+      )}
 
       {modal && (
         <Modal title={modal === "new" ? "Add Flat" : "Edit Flat"} onClose={() => setModal(null)} wide>

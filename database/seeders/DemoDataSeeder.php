@@ -47,11 +47,11 @@ class DemoDataSeeder extends Seeder
         $bashundhara = Zone::create(['name' => 'Bashundhara']);
         $uttara = Zone::create(['name' => 'Uttara']);
 
-        $blueHaven = Project::create(['zone_id' => $bashundhara->id, 'type' => 'regular', 'name' => 'BLUEHAVEN', 'code' => 'A-2241', 'address' => 'P-1187 & 1188, R-55, B-L', 'road_facing' => 'S-Rd', 'land_katha' => 6.0, 'total_floors' => 9, 'status' => 'Ongoing', 'handover' => 'Nov-28']);
-        $springAura = Project::create(['zone_id' => $bashundhara->id, 'type' => 'regular', 'name' => 'SPRING AURA', 'code' => 'A', 'address' => 'P-2589, R-4, B-L', 'road_facing' => 'N-Rd', 'land_katha' => 5.0, 'total_floors' => 9, 'status' => 'Ongoing', 'handover' => 'Dec-28']);
-        $nordica = Project::create(['zone_id' => $bashundhara->id, 'type' => 'regular', 'name' => 'NORDICA', 'code' => 'A-1808', 'address' => 'P-2643, R-2, B-L', 'road_facing' => 'N-Rd', 'land_katha' => 5.0, 'total_floors' => 9, 'status' => 'Ongoing', 'handover' => 'Oct-29']);
-        $palolika = Project::create(['zone_id' => $bashundhara->id, 'type' => 'rr', 'name' => 'PALOLIKA', 'code' => 'A-5', 'address' => 'Re-Sale Dept.', 'road_facing' => '—', 'land_katha' => 2.0, 'total_floors' => 5, 'status' => 'Completed', 'handover' => '—']);
-        $skyline = Project::create(['zone_id' => $uttara->id, 'type' => 'regular', 'name' => 'SKYLINE UTTARA', 'code' => 'B-11', 'address' => 'House 11, Road 6, Sector 4', 'road_facing' => 'Main Rd', 'land_katha' => 8.0, 'total_floors' => 8, 'status' => 'Ongoing', 'handover' => 'Mar-27']);
+        $blueHaven = Project::create(['zone_id' => $bashundhara->id, 'type' => 'regular', 'name' => 'BLUEHAVEN', 'code' => 'A-2241', 'address' => 'P-1187 & 1188, R-55, B-L', 'road_facing' => 'S-Rd', 'land_katha' => 6.0, 'total_floors' => 9, 'status' => 'Ongoing', 'handover' => 'Nov-28', 'launch_date' => 'Jan-25']);
+        $springAura = Project::create(['zone_id' => $bashundhara->id, 'type' => 'regular', 'name' => 'SPRING AURA', 'code' => 'A', 'address' => 'P-2589, R-4, B-L', 'road_facing' => 'N-Rd', 'land_katha' => 5.0, 'total_floors' => 9, 'status' => 'Ongoing', 'handover' => 'Dec-28', 'launch_date' => 'Mar-25']);
+        $nordica = Project::create(['zone_id' => $bashundhara->id, 'type' => 'regular', 'name' => 'NORDICA', 'code' => 'A-1808', 'address' => 'P-2643, R-2, B-L', 'road_facing' => 'N-Rd', 'land_katha' => 5.0, 'total_floors' => 9, 'status' => 'Ongoing', 'handover' => 'Oct-29', 'launch_date' => 'Jun-25']);
+        $palolika = Project::create(['zone_id' => $bashundhara->id, 'type' => 'rr', 'name' => 'PALOLIKA', 'code' => 'A-5', 'address' => 'Re-Sale Dept.', 'road_facing' => '—', 'land_katha' => 2.0, 'total_floors' => 5, 'status' => 'Completed', 'handover' => '—', 'launch_date' => '—']);
+        $skyline = Project::create(['zone_id' => $uttara->id, 'type' => 'regular', 'name' => 'SKYLINE UTTARA', 'code' => 'B-11', 'address' => 'House 11, Road 6, Sector 4', 'road_facing' => 'Main Rd', 'land_katha' => 8.0, 'total_floors' => 8, 'status' => 'Ongoing', 'handover' => 'Mar-27', 'launch_date' => 'Sep-24']);
 
         $mkFlat = fn (Project $p, int $floor, string $no, float $size, float $pricePerSft, string $status) => Flat::create([
             'project_id' => $p->id, 'floor' => $floor, 'flat_no' => $no, 'size_sft' => $size,

@@ -11,7 +11,7 @@ import DocumentsPanel from "@/components/DocumentsPanel";
 
 const emptyForm = {
   zone_id: "", type: "regular", name: "", code: "", address: "", road_facing: "",
-  land_katha: "", total_floors: "", status: "Ongoing", handover: "",
+  land_katha: "", total_floors: "", status: "Ongoing", handover: "", launch_date: "",
 };
 
 export default function ProjectsPage() {
@@ -51,7 +51,7 @@ export default function ProjectsPage() {
     setForm({
       zone_id: p.zone_id, type: p.type, name: p.name, code: p.code || "", address: p.address || "",
       road_facing: p.road_facing || "", land_katha: p.land_katha ?? "", total_floors: p.total_floors ?? "",
-      status: p.status, handover: p.handover || "",
+      status: p.status, handover: p.handover || "", launch_date: p.launch_date || "",
     });
     setSaveError("");
     setModal(p.id);
@@ -235,6 +235,9 @@ export default function ProjectsPage() {
             </Field>
             <Field label="Handover Date">
               <input className={inputCls} value={form.handover} onChange={(e) => setForm({ ...form, handover: e.target.value })} placeholder="e.g. Nov-28" />
+            </Field>
+            <Field label="Launch Date">
+              <input className={inputCls} value={form.launch_date} onChange={(e) => setForm({ ...form, launch_date: e.target.value })} placeholder="e.g. Jan-25" />
             </Field>
           </div>
           <div className="flex justify-end gap-2 mt-2">
