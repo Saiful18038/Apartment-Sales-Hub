@@ -18,7 +18,7 @@ const emptyForm = {
 function FloorRow({ label, children }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="w-16 text-xs font-medium text-slate-500 shrink-0">{label}</div>
+      <div className="w-[68px] text-xs font-medium text-slate-500 shrink-0">{label}</div>
       <div className="flex-1">{children}</div>
     </div>
   );
@@ -63,7 +63,7 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
 
       <div className="space-y-2 flex-1">
         {floors.map((fl) => (
-          <FloorRow key={fl} label={`Fl ${fl}`}>
+          <FloorRow key={fl} label={`Floor ${fl}`}>
             <div className="flex flex-col gap-1.5">
               {sorted.filter((f) => f.floor === fl).map((f) => {
                 const s = statusMeta(f.status_code);
@@ -122,12 +122,14 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
             (owner, admin, employee); only edited via the Add/Edit Project
             form, which stays owner/admin-only. */}
         <FloorRow label="">
-          <button
+          <Btn
+            variant="primary"
+            size="sm"
             onClick={() => onShowInfo(project)}
-            className="w-full rounded-[10px] border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[12px] font-semibold py-1.5 transition"
+            className="w-full !justify-center rounded-[10px] py-1.5 text-[12px]"
           >
             Basic Information
-          </button>
+          </Btn>
         </FloorRow>
 
         <div className="pt-1">

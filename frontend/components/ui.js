@@ -84,7 +84,7 @@ export function Td({ children, className = "" }) {
   return <td className={`px-3 py-2 text-sm text-slate-700 ${className}`}>{children}</td>;
 }
 
-export function Btn({ children, onClick, variant = "primary", size = "md", disabled, type = "button" }) {
+export function Btn({ children, onClick, variant = "primary", size = "md", disabled, type = "button", className = "" }) {
   const base = "inline-flex items-center gap-1.5 rounded-lg font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]";
   const sizes = size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-4 py-2.5 text-sm";
   const variants = {
@@ -95,7 +95,7 @@ export function Btn({ children, onClick, variant = "primary", size = "md", disab
     gold: "bg-gradient-to-b from-[#e0ac2b] to-[#B7860B] text-white shadow-sm shadow-[#B7860B]/30 hover:shadow-md hover:shadow-[#B7860B]/40 hover:brightness-110",
   };
   return (
-    <button type={type} disabled={disabled} onClick={onClick} className={`${base} ${sizes} ${variants[variant]}`}>
+    <button type={type} disabled={disabled} onClick={onClick} className={`${base} ${sizes} ${variants[variant]} ${className}`}>
       {children}
     </button>
   );
