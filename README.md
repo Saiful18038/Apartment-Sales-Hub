@@ -168,7 +168,36 @@ run the scheduler continuously in dev: `php artisan schedule:work`.
   if the company's projects actually have multiple named buildings sharing
   one zone.
 
-## 6. Project layout notes for VS Code
+## 6. Deploying (Render, or any Docker host)
+
+The repo ships a `Dockerfile` that builds the whole app — Next.js dashboard
+compiled to a static export in stage 1, copied into Laravel's `public/` in
+stage 2 — into one image that serves the UI + API on a single port. It
+self-configures on first boot (`docker-entrypoint.sh`): creates `.env` from
+`.env.example` if missing, generates `APP_KEY`, runs migrations + seeders,
+and starts `php artisan serve` on `$PORT` (Render sets this automatically;
+defaults to `10000`).
+
+To deploy on Render:
+
+1. New → Web Service → connect this GitHub repo, runtime **Docker**
+   (or New → Blueprint to pick up `render.yaml` automatically).
+2. No build/start command needed — Render just builds the `Dockerfile`.
+3. Defaults to a bundled SQLite database (`DB_CONNECTION=sqlite`), so it
+   runs with zero external services. **Render's free plan has an ephemeral
+   filesystem**, so SQLite data does not survive a redeploy or a cold
+   start after the free instance spins down — fine for a demo/portfolio
+   deploy, not for data you need to keep. For real persistent data, add a
+   managed MySQL/Postgres and set `DB_CONNECTION`/`DB_HOST`/`DB_DATABASE`/
+   `DB_USERNAME`/`DB_PASSWORD` in the service's Environment tab (the
+   container picks them up automatically — no code change needed).
+4. After the first successful deploy, set `APP_URL` in the dashboard to
+   the assigned `https://*.onrender.com` URL.
+
+The same image runs on any other Docker host the same way:
+`docker build -t apartment-sales-hub . && docker run -p 8000:10000 apartment-sales-hub`.
+
+## 7. Project layout notes for VS Code
 
 Everything under `app/`, `config/license.php`, `database/migrations/2024_*`,
 `database/seeders/`, and `routes/api.php` is the hand-authored business

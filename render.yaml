@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: apartment-sales-hub
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: Apartment Sales Hub
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      # After the first deploy, set this in the Render dashboard to your
+      # actual service URL, e.g. https://apartment-sales-hub.onrender.com
+      - key: APP_URL
+        value: http://localhost
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: LOG_CHANNEL
+        value: stderr
