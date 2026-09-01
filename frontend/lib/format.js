@@ -38,5 +38,6 @@ export function calcFlatPrice(flat) {
   const basic = (Number(flat.price_per_sft) || 0) * (Number(flat.size_sft) || 0);
   const parking = (Number(flat.parking_charge) || 0) * (Number(flat.parking_count) || 0);
   const utility = Number(flat.utility_charge) || 0;
-  return { basic, parking, utility, total: basic + parking + utility };
+  const reserve = Number(flat.reserve_fund) || 0;
+  return { basic, parking, utility, reserve, total: basic + parking + utility + reserve };
 }

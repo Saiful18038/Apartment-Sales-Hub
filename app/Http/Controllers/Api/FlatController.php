@@ -72,6 +72,7 @@ class FlatController extends Controller
             'parking_charge' => 'nullable|numeric',
             'parking_count' => 'nullable|integer|min:0',
             'utility_charge' => 'nullable|numeric',
+            'reserve_fund' => 'nullable|numeric',
             'facing' => 'nullable|string|max:255',
             'bedroom' => 'nullable|integer|min:0',
             'bathroom' => 'nullable|integer|min:0',

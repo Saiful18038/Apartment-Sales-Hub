@@ -8,7 +8,7 @@ class Flat extends Model
 {
     protected $fillable = [
         'project_id', 'floor', 'flat_no', 'size_sft', 'price_per_sft',
-        'parking_charge', 'parking_count', 'utility_charge', 'facing',
+        'parking_charge', 'parking_count', 'utility_charge', 'reserve_fund', 'facing',
         'bedroom', 'bathroom', 'balcony', 'status_code', 'notes',
     ];
 
@@ -24,13 +24,13 @@ class Flat extends Model
 
     /**
      * Roadmap Phase 5 — Price Formula (single source of truth).
-     * Sub-Total = (Price/sft × Size) + (Parking Charge × Parking Count) + Utility Charge
+     * Sub-Total = (Price/sft × Size) + (Parking Charge × Parking Count) + Utility Charge + Reserve Fund
      */
     public function calcSubTotal(): float
     {
         $basic = (float) $this->price_per_sft * (float) $this->size_sft;
         $parking = (float) $this->parking_charge * (int) $this->parking_count;
-        return $basic + $parking + (float) $this->utility_charge;
+        return $basic + $parking + (float) $this->utility_charge + (float) $this->reserve_fund;
     }
 
     /** Roadmap Reports — First / Middle / Top Floor classification. */

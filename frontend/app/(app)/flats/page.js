@@ -11,7 +11,7 @@ import { Btn, Field, inputCls, Modal, ErrorBanner, LoadingBlock, EmptyState, Sta
 
 const emptyForm = {
   flat_no: "", floor: "", size_sft: "", price_per_sft: "", parking_charge: 500000, parking_count: 1,
-  utility_charge: 600000, facing: "", bedroom: 3, bathroom: 3, balcony: 1, status_code: "AVAILABLE", notes: "",
+  utility_charge: 600000, reserve_fund: 25000, facing: "", bedroom: 3, bathroom: 3, balcony: 1, status_code: "AVAILABLE", notes: "",
 };
 
 /** One row of a floor-map card: a fixed-width label + a flex-grow box area. */
@@ -200,6 +200,7 @@ export default function FlatsPage() {
     setForm({
       flat_no: f.flat_no, floor: f.floor, size_sft: f.size_sft, price_per_sft: f.price_per_sft,
       parking_charge: f.parking_charge, parking_count: f.parking_count, utility_charge: f.utility_charge,
+      reserve_fund: f.reserve_fund ?? 0,
       facing: f.facing || "", bedroom: f.bedroom ?? "", bathroom: f.bathroom ?? "", balcony: f.balcony ?? "",
       status_code: f.status_code, notes: f.notes || "",
     });
@@ -218,6 +219,7 @@ export default function FlatsPage() {
       parking_charge: parseFloat(form.parking_charge) || 0,
       parking_count: parseInt(form.parking_count, 10) || 0,
       utility_charge: parseFloat(form.utility_charge) || 0,
+      reserve_fund: parseFloat(form.reserve_fund) || 0,
       bedroom: form.bedroom === "" ? null : parseInt(form.bedroom, 10) || 0,
       bathroom: form.bathroom === "" ? null : parseInt(form.bathroom, 10) || 0,
       balcony: form.balcony === "" ? null : parseInt(form.balcony, 10) || 0,
@@ -369,6 +371,9 @@ export default function FlatsPage() {
               <div className="flex justify-between"><span className="text-slate-500">Facing</span><span>{detail.facing || "—"}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Bed / Bath / Balcony</span><span>{detail.bedroom}/{detail.bathroom}/{detail.balcony}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Price / sft</span><span>{fmtBDT(detail.price_per_sft)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Parking Cost</span><span>{fmtBDT(calcFlatPrice(detail).parking)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Utility Cost</span><span>{fmtBDT(calcFlatPrice(detail).utility)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Reserves Fund</span><span>{fmtBDT(calcFlatPrice(detail).reserve)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Sub-Total</span><span className="font-semibold">{fmtBDT(detail.sub_total ?? calcFlatPrice(detail).total)}</span></div>
               <hr className="my-2 border-slate-100" />
               {isSold ? (
@@ -421,6 +426,7 @@ export default function FlatsPage() {
             <Field label="Parking Charge"><input type="number" className={inputCls} value={form.parking_charge} onChange={(e) => setForm({ ...form, parking_charge: e.target.value })} /></Field>
             <Field label="Parking Count"><input type="number" className={inputCls} value={form.parking_count} onChange={(e) => setForm({ ...form, parking_count: e.target.value })} /></Field>
             <Field label="Utility Charge"><input type="number" className={inputCls} value={form.utility_charge} onChange={(e) => setForm({ ...form, utility_charge: e.target.value })} /></Field>
+            <Field label="Reserves Fund"><input type="number" className={inputCls} value={form.reserve_fund} onChange={(e) => setForm({ ...form, reserve_fund: e.target.value })} /></Field>
             <Field label="Facing"><input className={inputCls} value={form.facing} onChange={(e) => setForm({ ...form, facing: e.target.value })} /></Field>
             <Field label="Bedroom"><input type="number" min="0" className={inputCls} value={form.bedroom} onChange={(e) => setForm({ ...form, bedroom: e.target.value })} /></Field>
             <Field label="Bathroom"><input type="number" min="0" className={inputCls} value={form.bathroom} onChange={(e) => setForm({ ...form, bathroom: e.target.value })} /></Field>
