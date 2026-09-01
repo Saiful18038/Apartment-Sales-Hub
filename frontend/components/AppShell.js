@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, MapPin, Building2, Home, Users, ClipboardList, Handshake,
   Wallet, ScrollText, LogOut, UserCog, AlertTriangle, ShieldAlert, Building, BarChart3, Menu, X,
+  Users2, CheckSquare,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { LICENSE_META } from "@/lib/status";
@@ -21,7 +22,9 @@ const NAV = [
   { href: "/sales", label: "Sales", icon: Handshake },
   { href: "/payments", label: "Payments", icon: Wallet },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/activity", label: "Activity Log", icon: ScrollText },
+  { href: "/teams", label: "Teams", icon: Users2, ownerAdminOnly: true },
   { href: "/users", label: "Employees", icon: UserCog, ownerAdminOnly: true },
 ];
 
@@ -154,7 +157,7 @@ export default function AppShell({ children }) {
               </div>
               <div className="hidden lg:block leading-tight">
                 <div className="text-xs font-semibold text-slate-700">{user?.name}</div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-wide">{user?.role}</div>
+                <div className="text-[10px] text-slate-400 uppercase tracking-wide">{user?.role?.replace("_", " ")}</div>
               </div>
               <button onClick={handleLogout} className="text-slate-400 hover:text-slate-600 ml-1 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
                 <LogOut size={16} />

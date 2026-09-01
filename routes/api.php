@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SaleController;
+use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ZoneController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +44,16 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::post('/payments', [PaymentController::class, 'store']);
     Route::get('/reports/floor-stock-summary', [ReportController::class, 'floorAndStockSummary']);
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+
+    // ---- Team hierarchy / Task management. Visibility and edit rights are
+    // scoped per-request inside the controllers (owner/admin: everything;
+    // Team Leader: their own team; Team Member: read their team, edit only
+    // their own task's status) — see TeamController/TaskController docblocks. ----
+    Route::get('/teams', [TeamController::class, 'index']);
+    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::post('/tasks', [TaskController::class, 'store']);
+    Route::put('/tasks/{task}', [TaskController::class, 'update']);
+    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
 
     // ---- Roadmap Phase 14 — Document Management ----
     Route::get('/documents', [DocumentController::class, 'index']);
@@ -76,6 +88,11 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
 
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
+
+        Route::post('/teams', [TeamController::class, 'store']);
+        Route::put('/teams/{team}', [TeamController::class, 'update']);
+        Route::delete('/teams/{team}', [TeamController::class, 'destroy']);
     });
 
     // ---- Owner only — narrower than the group above. Cancelling booking

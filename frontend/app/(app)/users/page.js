@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -11,17 +11,23 @@ const emptyForm = { name: "", email: "", department: "", role: "employee", emplo
 const roleBadge = {
   owner: "bg-[#B7860B]/10 text-[#B7860B]",
   admin: "bg-[#1F3864]/10 text-[#1F3864]",
+  team_leader: "bg-emerald-50 text-emerald-700",
   employee: "bg-slate-100 text-slate-600",
 };
 
 export default function UsersPage() {
   const { user } = useAuth();
   const { data: users, loading, error, refetch } = useApi("/users");
+  const { data: teams } = useApi("/teams");
 
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saveError, setSaveError] = useState("");
   const [created, setCreated] = useState(null); // { user, temp_password }
+
+  const [editUser, setEditUser] = useState(null);
+  const [editForm, setEditForm] = useState({ role: "employee", team_id: "" });
+  const [editError, setEditError] = useState("");
 
   const openNew = () => { setForm(emptyForm); setSaveError(""); setCreated(null); setModal(true); };
 
@@ -36,6 +42,25 @@ export default function UsersPage() {
     }
   };
 
+  const openEdit = (u) => {
+    setEditUser(u);
+    setEditForm({ role: u.role, team_id: u.team_id ?? "" });
+    setEditError("");
+  };
+
+  const saveEdit = async () => {
+    try {
+      await api.put(`/users/${editUser.id}`, {
+        role: editForm.role,
+        team_id: editForm.team_id === "" ? null : Number(editForm.team_id),
+      });
+      setEditUser(null);
+      refetch();
+    } catch (e) {
+      setEditError(e.message || "Update failed.");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader title="Employees & Users">
@@ -47,24 +72,35 @@ export default function UsersPage() {
         <LoadingBlock />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {users.map((u) => (
-            <div key={u.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-semibold">
-                  {u.name.charAt(0)}
+          {users.map((u) => {
+            const team = (teams || []).find((t) => t.id === u.team_id);
+            return (
+              <div key={u.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-semibold shrink-0">
+                      {u.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-800">{u.name}</div>
+                      <div className="text-xs text-slate-400">{u.email}</div>
+                    </div>
+                  </div>
+                  {u.id !== user.id && u.role !== "owner" && (
+                    <button onClick={() => openEdit(u)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100" title="Edit role / team">
+                      <Pencil size={14} />
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <div className="font-medium text-slate-800">{u.name}</div>
-                  <div className="text-xs text-slate-400">{u.email}</div>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${roleBadge[u.role]}`}>{u.role.replace("_", " ")}</span>
+                  {u.employee_code && <span className="text-[10px] text-slate-400">{u.employee_code}</span>}
+                  {u.department && <span className="text-[10px] text-slate-400">· {u.department}</span>}
+                  {team && <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{team.name}</span>}
                 </div>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${roleBadge[u.role]}`}>{u.role}</span>
-                {u.employee_code && <span className="text-[10px] text-slate-400">{u.employee_code}</span>}
-                {u.department && <span className="text-[10px] text-slate-400">· {u.department}</span>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {users.length === 0 && <EmptyState text="No users yet" />}
         </div>
       )}
@@ -89,6 +125,7 @@ export default function UsersPage() {
               <Field label="Role">
                 <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                   <option value="employee">Employee</option>
+                  <option value="team_leader">Team Leader</option>
                   {user.role === "owner" && <option value="admin">Admin</option>}
                 </select>
               </Field>
@@ -103,6 +140,31 @@ export default function UsersPage() {
               </div>
             </>
           )}
+        </Modal>
+      )}
+
+      {editUser && (
+        <Modal title={`Edit — ${editUser.name}`} onClose={() => setEditUser(null)}>
+          <ErrorBanner message={editError} />
+          <Field label="Role">
+            <select className={inputCls} value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}>
+              <option value="employee">Employee</option>
+              <option value="team_leader">Team Leader</option>
+              {user.role === "owner" && <option value="admin">Admin</option>}
+            </select>
+          </Field>
+          {editForm.role !== "admin" && (
+            <Field label="Team">
+              <select className={inputCls} value={editForm.team_id} onChange={(e) => setEditForm({ ...editForm, team_id: e.target.value })}>
+                <option value="">No team</option>
+                {(teams || []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </Field>
+          )}
+          <div className="flex justify-end gap-2 mt-2">
+            <Btn variant="outline" onClick={() => setEditUser(null)}>Cancel</Btn>
+            <Btn onClick={saveEdit}>Save</Btn>
+          </div>
         </Modal>
       )}
     </div>

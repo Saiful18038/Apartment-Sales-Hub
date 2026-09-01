@@ -57,6 +57,21 @@ export const CUSTOMER_STATUS_COLORS = {
 
 export const PROJECT_STATUSES = ["Planning", "Ongoing", "Completed", "Suspended", "Archived"];
 
+// Team hierarchy / Task management (owner's request) — matches
+// tasks.status/priority enums in the create_tasks_table migration.
+export const TASK_STATUSES = ["todo", "in_progress", "done"];
+export const TASK_STATUS_LABELS = { todo: "To Do", in_progress: "In Progress", done: "Done" };
+export const TASK_STATUS_COLORS = {
+  todo: "bg-slate-100 text-slate-600",
+  in_progress: "bg-blue-50 text-blue-700",
+  done: "bg-emerald-50 text-emerald-700",
+};
+export const TASK_PRIORITY_COLORS = {
+  low: "bg-slate-100 text-slate-500",
+  medium: "bg-amber-50 text-amber-700",
+  high: "bg-red-50 text-red-700",
+};
+
 /**
  * Roadmap Part B / Stage 16-20 — License states mirrored from the API's
  * CheckLicense middleware (App\Http\Middleware\CheckLicense /
