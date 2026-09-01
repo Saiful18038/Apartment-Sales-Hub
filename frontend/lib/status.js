@@ -19,6 +19,14 @@
  * legend and chart, and every badge already carries its own text label, so
  * color only needs to signal "which sold sub-type", not fight for the same
  * hue at low-Delta-E — see the validator's normal-vision floor.
+ *
+ * ASSET_BOOKED's label is "Sold Out", not "Asset Booked" — per the owner's
+ * request, the moment a client pays booking money the flat should read as
+ * sold to anyone looking at the floor-map, not "still somewhat available".
+ * It keeps its own amber color (distinct from the two SOLD_* reds/teal) so
+ * owner/admin can still tell at a glance "booked, not yet a confirmed sale"
+ * — the underlying status_code, Booking record and approval workflow are
+ * unchanged, only this displayed label.
  */
 export const STATUS = {
   AVAILABLE: { label: "Available", fill: "#ECFDF5", border: "#059669", text: "#065F46", sellable: true },
@@ -26,7 +34,7 @@ export const STATUS = {
   SOLD_CR: { label: "Sold (CR)", fill: "#FEF2F2", border: "#DC2626", text: "#991B1B", sellable: false },
   SOLD_OS_SS: { label: "Sold (OS/SS)", fill: "#F0FDFA", border: "#0D9488", text: "#115E59", sellable: false },
   RESALE_RR: { label: "Re-Sale (RR)", fill: "#F5F3FF", border: "#7C3AED", text: "#5B21B6", sellable: true },
-  ASSET_BOOKED: { label: "Asset Booked", fill: "#FFFBEB", border: "#D97706", text: "#92400E", sellable: false },
+  ASSET_BOOKED: { label: "Sold Out", fill: "#FFFBEB", border: "#D97706", text: "#92400E", sellable: false },
   READY: { label: "Ready Apartment", fill: "#FFFFFF", border: "#991B1B", text: "#991B1B", sellable: true },
 };
 

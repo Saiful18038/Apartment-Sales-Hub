@@ -10,7 +10,8 @@ import { Btn, Field, inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, Emp
 import DocumentsPanel from "@/components/DocumentsPanel";
 
 export default function BookingsPage() {
-  useAuth();
+  const { user } = useAuth();
+  const isOwner = user.role === "owner";
   const { data: bookings, loading, error, refetch } = useApi("/bookings");
   const { data: flatsRes } = useApi("/flats");
   const { data: customers } = useApi("/customers");
@@ -94,7 +95,10 @@ export default function BookingsPage() {
                       {b.status === "active" && (
                         <>
                           <button className="text-xs text-[#1F3864] hover:underline" onClick={() => convert(b.id)}>Convert to Sale</button>
-                          <button className="text-xs text-red-500 hover:underline" onClick={() => cancel(b.id)}>Cancel</button>
+                          {/* Cancelling booking money is owner-only (see BookingController::cancel) */}
+                          {isOwner && (
+                            <button className="text-xs text-red-500 hover:underline" onClick={() => cancel(b.id)}>Cancel</button>
+                          )}
                         </>
                       )}
                     </div>

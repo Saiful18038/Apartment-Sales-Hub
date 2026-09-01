@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  MapPin, Building2, Home, ClipboardList, Handshake, Wallet, AlertTriangle, BarChart3,
+  MapPin, Building2, Home, ClipboardList, Handshake, Wallet, AlertTriangle, BarChart3, Coins, CheckCircle2,
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
 import { api } from "@/lib/api";
@@ -17,17 +17,19 @@ export default function DashboardPage() {
   const [flats, setFlats] = useState([]);
   const [sales, setSales] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [activity, setActivity] = useState([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const [z, p, f, s, pay, act] = await Promise.all([
+        const [z, p, f, s, pay, book, act] = await Promise.all([
           api.get("/zones"),
           api.get("/projects"),
           api.get("/flats"),
           api.get("/sales"),
           api.get("/payments"),
+          api.get("/bookings"),
           api.get("/activity-logs"),
         ]);
         setZones(z);
@@ -35,6 +37,7 @@ export default function DashboardPage() {
         setFlats(f.data || []);
         setSales(s);
         setPayments(pay);
+        setBookings(book);
         setActivity(act);
         setState({ loading: false, error: "" });
       } catch (e) {
@@ -59,6 +62,20 @@ export default function DashboardPage() {
   const totalDue = totalSaleValue - totalPaid;
   const pendingSales = sales.filter((s) => s.status === "pending").length;
 
+  // A flat counts as "sold" for these three cards the moment booking money
+  // is taken — not only once a Booking is converted into a confirmed Sale —
+  // per the owner's request: booking money already commits the unit, so the
+  // dashboard should reflect that immediately rather than waiting for the
+  // separate conversion/approval step (Roadmap Phase 9/10 still govern the
+  // Booking -> Sale workflow itself; this only changes what the dashboard
+  // counts as "sold"). Active bookings and confirmed sales never double up
+  // here: a flat leaves ASSET_BOOKED for a SOLD_* status_code only when its
+  // booking is actually converted (see BookingController::convertToSale).
+  const activeBookings = bookings.filter((b) => b.status === "active");
+  const soldApartmentCount = flats.filter((f) => ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code)).length + activeBookings.length;
+  const totalBookingMoney = activeBookings.reduce((a, b) => a + Number(b.amount), 0);
+  const totalSoldAmount = totalSaleValue + totalBookingMoney;
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
@@ -66,9 +83,11 @@ export default function DashboardPage() {
         <StatCard icon={Building2} label="Projects" value={projects.length} accent="#1F3864" />
         <StatCard icon={Home} label="Total Flats" value={flats.length} accent="#1F3864" />
         <StatCard icon={ClipboardList} label="Available" value={flats.filter((f) => f.status_code === "AVAILABLE").length} accent="#64748B" />
+        <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} accent="#059669" />
         <StatCard icon={Handshake} label="Confirmed Sales" value={confirmedSales.length} accent="#B7860B" />
         <StatCard icon={AlertTriangle} label="Pending Approval" value={pendingSales} accent="#D97706" />
-        <StatCard icon={Wallet} label="Total Collected" value={fmtBDT(totalPaid)} accent="#15803D" />
+        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} accent="#15803D" />
+        <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} accent="#B7860B" />
         <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} accent="#DC2626" />
       </div>
 

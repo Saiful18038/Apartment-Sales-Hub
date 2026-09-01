@@ -60,8 +60,10 @@ class BookingController extends Controller
 
     public function cancel(Request $request, Booking $booking)
     {
-        if ($request->user()->isEmployee() && $booking->employee_id !== $request->user()->id) {
-            return response()->json(['message' => 'Forbidden — not your booking.'], 403);
+        // Per the owner's request: cancelling booking money is owner-only —
+        // not even admin, and not the employee who took the booking.
+        if (! $request->user()->isOwner()) {
+            return response()->json(['message' => 'Only the owner can cancel a booking.'], 403);
         }
         DB::transaction(function () use ($booking) {
             $booking->update(['status' => 'cancelled']);

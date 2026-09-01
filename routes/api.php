@@ -35,7 +35,6 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::put('/customers/{customer}', [CustomerController::class, 'update']);
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::post('/bookings', [BookingController::class, 'store']);
-    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
     Route::post('/bookings/{booking}/convert-to-sale', [BookingController::class, 'convertToSale']);
     Route::get('/sales', [SaleController::class, 'index']);
     Route::post('/sales', [SaleController::class, 'store']);
@@ -76,5 +75,12 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
 
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
+    });
+
+    // ---- Owner only — narrower than the group above. Cancelling booking
+    // money is a financial reversal the owner alone should be able to make,
+    // not admin and not the employee who took the booking. ----
+    Route::middleware('role:owner')->group(function () {
+        Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
     });
 });
