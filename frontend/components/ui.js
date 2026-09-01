@@ -47,19 +47,34 @@ export function StatusPill({ code }) {
   );
 }
 
-export function StatCard({ icon: Icon, label, value, accent }) {
+/**
+ * Vivid gradient "box" KPI tile (the look the owner asked for, referencing
+ * a zCart-style admin dashboard) — a solid two-tone gradient card with a
+ * pair of oversized translucent circles bleeding off the edge for depth,
+ * an icon badge, a big bold number, and an optional one-line caption.
+ * `from`/`to` are hex colors for the diagonal gradient; picked per-card in
+ * DashboardPage rather than derived from a single `accent`, since here the
+ * color is decorative identity for a tile (always paired with its own
+ * label+icon, never asked to carry meaning alone) rather than a value that
+ * has to match a status/series color used elsewhere.
+ */
+export function StatCard({ icon: Icon, label, value, caption, from, to }) {
   return (
-    <div className="shadow-premium group bg-white rounded-2xl p-4 flex items-center gap-3.5 transition-transform hover:-translate-y-0.5">
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: `linear-gradient(135deg, ${accent}26, ${accent}12)`, color: accent }}
-      >
-        <Icon size={21} />
+    <div
+      className="group relative overflow-hidden rounded-2xl p-4 shadow-premium transition-transform hover:-translate-y-0.5"
+      style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
+    >
+      <div className="pointer-events-none absolute -right-5 -top-8 w-28 h-28 rounded-full bg-white/10" />
+      <div className="pointer-events-none absolute -right-8 bottom-[-2.25rem] w-24 h-24 rounded-full bg-white/10" />
+
+      <div className="relative flex items-start justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-white/85 truncate">{label}</div>
+        <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-white">
+          <Icon size={16} />
+        </div>
       </div>
-      <div className="min-w-0">
-        <div className="text-xs font-medium text-slate-500 truncate">{label}</div>
-        <div className="text-xl font-bold text-slate-800 truncate tracking-tight">{value}</div>
-      </div>
+      <div className="relative text-2xl font-bold text-white tracking-tight truncate mt-2">{value}</div>
+      {caption && <div className="relative text-[11px] text-white/75 truncate mt-1.5">{caption}</div>}
     </div>
   );
 }
