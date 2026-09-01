@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Lock, Search, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Lock, Search, X, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -11,7 +11,7 @@ import { Btn, Field, inputCls, Modal, ErrorBanner, LoadingBlock, EmptyState, Sta
 
 const emptyForm = {
   flat_no: "", floor: "", size_sft: "", price_per_sft: "", parking_charge: 500000, parking_count: 1,
-  utility_charge: 600000, reserve_fund: 25000, facing: "", bedroom: 3, bathroom: 3, balcony: 1, status_code: "AVAILABLE", notes: "",
+  parking_number: "", utility_charge: 600000, reserve_fund: 25000, facing: "", bedroom: 3, bathroom: 3, balcony: 1, status_code: "AVAILABLE", notes: "",
 };
 
 /** One row of a floor-map card: a fixed-width label + a flex-grow box area. */
@@ -175,6 +175,9 @@ export default function FlatsPage() {
   const [saveError, setSaveError] = useState("");
   const [detail, setDetail] = useState(null);
   const [infoProject, setInfoProject] = useState(null);
+  const [exchangeFlat, setExchangeFlat] = useState(null); // flat whose parking number we're exchanging
+  const [exchangeWithId, setExchangeWithId] = useState("");
+  const [exchangeError, setExchangeError] = useState("");
 
   // Filtering system — same Location/Status/Type/Search filter bar as /projects,
   // filtering which project cards show in the grid.
@@ -199,8 +202,8 @@ export default function FlatsPage() {
     setAddProjectId(f.project_id);
     setForm({
       flat_no: f.flat_no, floor: f.floor, size_sft: f.size_sft, price_per_sft: f.price_per_sft,
-      parking_charge: f.parking_charge, parking_count: f.parking_count, utility_charge: f.utility_charge,
-      reserve_fund: f.reserve_fund ?? 0,
+      parking_charge: f.parking_charge, parking_count: f.parking_count, parking_number: f.parking_number || "",
+      utility_charge: f.utility_charge, reserve_fund: f.reserve_fund ?? 0,
       facing: f.facing || "", bedroom: f.bedroom ?? "", bathroom: f.bathroom ?? "", balcony: f.balcony ?? "",
       status_code: f.status_code, notes: f.notes || "",
     });
@@ -252,6 +255,24 @@ export default function FlatsPage() {
       refetch();
     } catch (e) {
       alert(e.message || "Status change failed.");
+    }
+  };
+
+  const openExchange = (flat) => {
+    setExchangeFlat(flat);
+    setExchangeWithId("");
+    setExchangeError("");
+  };
+
+  const confirmExchange = async () => {
+    if (!exchangeWithId) return;
+    try {
+      await api.post(`/flats/${exchangeFlat.id}/exchange-parking`, { with_flat_id: Number(exchangeWithId) });
+      setExchangeFlat(null);
+      setDetail(null);
+      refetch();
+    } catch (e) {
+      setExchangeError(e.message || "Exchange failed.");
     }
   };
 
@@ -370,6 +391,21 @@ export default function FlatsPage() {
               <div className="flex justify-between"><span className="text-slate-500">Size</span><span>{detail.size_sft} sft</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Facing</span><span>{detail.facing || "—"}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Bed / Bath / Balcony</span><span>{detail.bedroom}/{detail.bathroom}/{detail.balcony}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Parking Number</span>
+                <span className="flex items-center gap-2">
+                  {detail.parking_number || "—"}
+                  {canEdit && (
+                    <button
+                      onClick={() => openExchange(detail)}
+                      className="flex items-center gap-1 text-[11px] text-[#1F3864] hover:underline"
+                      title="Exchange with another flat's parking number"
+                    >
+                      <ArrowLeftRight size={12} /> Exchange
+                    </button>
+                  )}
+                </span>
+              </div>
               <div className="flex justify-between"><span className="text-slate-500">Price / sft</span><span>{fmtBDT(detail.price_per_sft)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Parking Cost</span><span>{fmtBDT(calcFlatPrice(detail).parking)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Utility Cost</span><span>{fmtBDT(calcFlatPrice(detail).utility)}</span></div>
@@ -415,6 +451,33 @@ export default function FlatsPage() {
         </Modal>
       )}
 
+      {exchangeFlat && (() => {
+        // Same project only — parking is physically tied to one building's
+        // garage (see FlatController::exchangeParking).
+        const candidates = allFlats.filter((f) => f.project_id === exchangeFlat.project_id && f.id !== exchangeFlat.id);
+        return (
+          <Modal title={`Exchange Parking — ${exchangeFlat.flat_no}`} onClose={() => setExchangeFlat(null)}>
+            <ErrorBanner message={exchangeError} />
+            <div className="text-sm text-slate-500 mb-3">
+              Current parking number: <span className="font-semibold text-slate-700">{exchangeFlat.parking_number || "—"}</span>
+            </div>
+            <Field label="Exchange with">
+              <select className={inputCls} value={exchangeWithId} onChange={(e) => setExchangeWithId(e.target.value)}>
+                <option value="">Select a flat…</option>
+                {candidates.map((f) => (
+                  <option key={f.id} value={f.id}>{f.flat_no} — parking {f.parking_number || "—"}</option>
+                ))}
+              </select>
+            </Field>
+            {candidates.length === 0 && <div className="text-xs text-slate-400 italic">No other flats in this project.</div>}
+            <div className="flex justify-end gap-2 mt-2">
+              <Btn variant="outline" onClick={() => setExchangeFlat(null)}>Cancel</Btn>
+              <Btn onClick={confirmExchange} disabled={!exchangeWithId}><ArrowLeftRight size={14} /> Exchange</Btn>
+            </div>
+          </Modal>
+        );
+      })()}
+
       {modal && (
         <Modal title={modal === "new" ? "Add Flat" : "Edit Flat"} onClose={() => setModal(null)} wide>
           <ErrorBanner message={saveError} />
@@ -425,6 +488,7 @@ export default function FlatsPage() {
             <Field label="Price / sft"><input type="number" className={inputCls} value={form.price_per_sft} onChange={(e) => setForm({ ...form, price_per_sft: e.target.value })} /></Field>
             <Field label="Parking Charge"><input type="number" className={inputCls} value={form.parking_charge} onChange={(e) => setForm({ ...form, parking_charge: e.target.value })} /></Field>
             <Field label="Parking Count"><input type="number" className={inputCls} value={form.parking_count} onChange={(e) => setForm({ ...form, parking_count: e.target.value })} /></Field>
+            <Field label="Parking Number"><input className={inputCls} value={form.parking_number} onChange={(e) => setForm({ ...form, parking_number: e.target.value })} placeholder="e.g. A9" /></Field>
             <Field label="Utility Charge"><input type="number" className={inputCls} value={form.utility_charge} onChange={(e) => setForm({ ...form, utility_charge: e.target.value })} /></Field>
             <Field label="Reserves Fund"><input type="number" className={inputCls} value={form.reserve_fund} onChange={(e) => setForm({ ...form, reserve_fund: e.target.value })} /></Field>
             <Field label="Facing"><input className={inputCls} value={form.facing} onChange={(e) => setForm({ ...form, facing: e.target.value })} /></Field>

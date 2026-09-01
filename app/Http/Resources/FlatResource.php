@@ -25,6 +25,7 @@ class FlatResource extends JsonResource
             'price_per_sft' => $this->price_per_sft,
             'parking_charge' => $this->parking_charge,
             'parking_count' => $this->parking_count,
+            'parking_number' => $this->parking_number,
             'utility_charge' => $this->utility_charge,
             'reserve_fund' => $this->reserve_fund,
             'facing' => $this->facing,

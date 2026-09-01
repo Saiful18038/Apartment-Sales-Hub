@@ -56,6 +56,7 @@ class DemoDataSeeder extends Seeder
         $mkFlat = fn (Project $p, int $floor, string $no, float $size, float $pricePerSft, string $status) => Flat::create([
             'project_id' => $p->id, 'floor' => $floor, 'flat_no' => $no, 'size_sft' => $size,
             'price_per_sft' => $pricePerSft, 'parking_charge' => 500000, 'parking_count' => 1,
+            'parking_number' => strtoupper(substr($p->code ?: $p->name, 0, 1)) . $floor,
             'utility_charge' => 600000, 'reserve_fund' => 25000, 'facing' => 'N-Rd', 'bedroom' => 3, 'bathroom' => 3, 'balcony' => 2,
             'status_code' => $status,
         ]);

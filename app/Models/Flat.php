@@ -8,7 +8,7 @@ class Flat extends Model
 {
     protected $fillable = [
         'project_id', 'floor', 'flat_no', 'size_sft', 'price_per_sft',
-        'parking_charge', 'parking_count', 'utility_charge', 'reserve_fund', 'facing',
+        'parking_charge', 'parking_count', 'parking_number', 'utility_charge', 'reserve_fund', 'facing',
         'bedroom', 'bathroom', 'balcony', 'status_code', 'notes',
     ];
 
