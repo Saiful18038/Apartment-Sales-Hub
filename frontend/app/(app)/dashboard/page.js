@@ -79,7 +79,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} />
         <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} />
         <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} />

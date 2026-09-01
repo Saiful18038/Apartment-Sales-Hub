@@ -61,20 +61,20 @@ export function StatusPill({ code }) {
 export function StatCard({ icon: Icon, label, value, caption, from, to }) {
   return (
     <div
-      className="group relative overflow-hidden rounded-2xl p-4 shadow-premium transition-transform hover:-translate-y-0.5"
+      className="group relative overflow-hidden rounded-2xl p-6 min-h-[148px] shadow-premium transition-transform hover:-translate-y-0.5"
       style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
     >
-      <div className="pointer-events-none absolute -right-5 -top-8 w-28 h-28 rounded-full bg-white/10" />
-      <div className="pointer-events-none absolute -right-8 bottom-[-2.25rem] w-24 h-24 rounded-full bg-white/10" />
+      <div className="pointer-events-none absolute -right-6 -top-10 w-36 h-36 rounded-full bg-white/10" />
+      <div className="pointer-events-none absolute -right-10 bottom-[-3rem] w-32 h-32 rounded-full bg-white/10" />
 
       <div className="relative flex items-start justify-between gap-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-white/85 truncate">{label}</div>
-        <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-white">
-          <Icon size={16} />
+        <div className="text-xs font-semibold uppercase text-white/85 leading-snug">{label}</div>
+        <div className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-white">
+          <Icon size={21} />
         </div>
       </div>
-      <div className="relative text-2xl font-bold text-white tracking-tight truncate mt-2">{value}</div>
-      {caption && <div className="relative text-[11px] text-white/75 truncate mt-1.5">{caption}</div>}
+      <div className="relative text-[28px] font-bold text-white tracking-tight leading-tight mt-3 break-words">{value}</div>
+      {caption && <div className="relative text-xs text-white/75 truncate mt-2">{caption}</div>}
     </div>
   );
 }
