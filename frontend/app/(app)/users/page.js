@@ -7,7 +7,7 @@ import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
 import { Btn, Field, inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, EmptyState } from "@/components/ui";
 
-const emptyForm = { name: "", email: "", department: "", designation: "", role: "employee", employee_code: "" };
+const emptyForm = { name: "", email: "", department: "", designation: "", role: "employee", employee_code: "", password: "" };
 const roleBadge = {
   owner: "bg-[#B7860B]/10 text-[#B7860B]",
   admin: "bg-[#1F3864]/10 text-[#1F3864]",
@@ -26,7 +26,7 @@ export default function UsersPage() {
   const [created, setCreated] = useState(null); // { user, temp_password }
 
   const [editUser, setEditUser] = useState(null);
-  const [editForm, setEditForm] = useState({ role: "employee", team_id: "", designation: "" });
+  const [editForm, setEditForm] = useState({ role: "employee", team_id: "", designation: "", password: "" });
   const [editError, setEditError] = useState("");
 
   const openNew = () => { setForm(emptyForm); setSaveError(""); setCreated(null); setModal(true); };
@@ -44,7 +44,7 @@ export default function UsersPage() {
 
   const openEdit = (u) => {
     setEditUser(u);
-    setEditForm({ role: u.role, team_id: u.team_id ?? "", designation: u.designation || "" });
+    setEditForm({ role: u.role, team_id: u.team_id ?? "", designation: u.designation || "", password: "" });
     setEditError("");
   };
 
@@ -54,6 +54,7 @@ export default function UsersPage() {
         role: editForm.role,
         team_id: editForm.team_id === "" ? null : Number(editForm.team_id),
         designation: editForm.designation,
+        password: editForm.password || undefined,
       });
       setEditUser(null);
       refetch();
@@ -113,8 +114,8 @@ export default function UsersPage() {
           {created ? (
             <div className="space-y-3">
               <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                {created.user.name} created. Share this temporary password with them — in production this would be
-                emailed instead of shown here.
+                {created.user.name} created. Share this password with them so they can log in — in production this
+                would be emailed instead of shown here.
               </div>
               <div className="text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-mono">{created.temp_password}</div>
               <div className="flex justify-end"><Btn onClick={() => setModal(false)}>Done</Btn></div>
@@ -133,10 +134,17 @@ export default function UsersPage() {
                 </select>
               </Field>
               {form.role === "employee" && (
-                <Field label="Employee Code">
+                <Field label="Employee ID">
                   <input className={inputCls} value={form.employee_code} onChange={(e) => setForm({ ...form, employee_code: e.target.value })} placeholder="e.g. EMP-050" />
                 </Field>
               )}
+              <Field label="Password">
+                <input
+                  type="password" className={inputCls} value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="Leave blank to auto-generate"
+                />
+              </Field>
               <div className="flex justify-end gap-2 mt-2">
                 <Btn variant="outline" onClick={() => setModal(false)}>Cancel</Btn>
                 <Btn onClick={save}>Save</Btn>
@@ -158,6 +166,13 @@ export default function UsersPage() {
           </Field>
           <Field label="Designation">
             <input className={inputCls} value={editForm.designation} onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })} placeholder="e.g. Senior Manager" />
+          </Field>
+          <Field label="Reset Password">
+            <input
+              type="password" className={inputCls} value={editForm.password}
+              onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+              placeholder="Leave blank to keep current password"
+            />
           </Field>
           {editForm.role !== "admin" && (
             <Field label="Team">
