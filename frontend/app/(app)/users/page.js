@@ -7,7 +7,7 @@ import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
 import { Btn, Field, inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, EmptyState } from "@/components/ui";
 
-const emptyForm = { name: "", email: "", department: "", role: "employee", employee_code: "" };
+const emptyForm = { name: "", email: "", department: "", designation: "", role: "employee", employee_code: "" };
 const roleBadge = {
   owner: "bg-[#B7860B]/10 text-[#B7860B]",
   admin: "bg-[#1F3864]/10 text-[#1F3864]",
@@ -26,7 +26,7 @@ export default function UsersPage() {
   const [created, setCreated] = useState(null); // { user, temp_password }
 
   const [editUser, setEditUser] = useState(null);
-  const [editForm, setEditForm] = useState({ role: "employee", team_id: "" });
+  const [editForm, setEditForm] = useState({ role: "employee", team_id: "", designation: "" });
   const [editError, setEditError] = useState("");
 
   const openNew = () => { setForm(emptyForm); setSaveError(""); setCreated(null); setModal(true); };
@@ -44,7 +44,7 @@ export default function UsersPage() {
 
   const openEdit = (u) => {
     setEditUser(u);
-    setEditForm({ role: u.role, team_id: u.team_id ?? "" });
+    setEditForm({ role: u.role, team_id: u.team_id ?? "", designation: u.designation || "" });
     setEditError("");
   };
 
@@ -53,6 +53,7 @@ export default function UsersPage() {
       await api.put(`/users/${editUser.id}`, {
         role: editForm.role,
         team_id: editForm.team_id === "" ? null : Number(editForm.team_id),
+        designation: editForm.designation,
       });
       setEditUser(null);
       refetch();
@@ -95,6 +96,7 @@ export default function UsersPage() {
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${roleBadge[u.role]}`}>{u.role.replace("_", " ")}</span>
                   {u.employee_code && <span className="text-[10px] text-slate-400">{u.employee_code}</span>}
+                  {u.designation && <span className="text-[10px] text-slate-400">· {u.designation}</span>}
                   {u.department && <span className="text-[10px] text-slate-400">· {u.department}</span>}
                   {team && <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{team.name}</span>}
                 </div>
@@ -122,6 +124,7 @@ export default function UsersPage() {
               <Field label="Name"><input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
               <Field label="Email"><input className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
               <Field label="Department"><input className={inputCls} value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></Field>
+              <Field label="Designation"><input className={inputCls} value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} placeholder="e.g. Senior Manager" /></Field>
               <Field label="Role">
                 <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                   <option value="employee">Employee</option>
@@ -152,6 +155,9 @@ export default function UsersPage() {
               <option value="team_leader">Team Leader</option>
               {user.role === "owner" && <option value="admin">Admin</option>}
             </select>
+          </Field>
+          <Field label="Designation">
+            <input className={inputCls} value={editForm.designation} onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })} placeholder="e.g. Senior Manager" />
           </Field>
           {editForm.role !== "admin" && (
             <Field label="Team">

@@ -12,7 +12,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        return User::select('id', 'name', 'email', 'role', 'employee_code', 'department', 'is_active', 'team_id')->get();
+        return User::select('id', 'name', 'email', 'role', 'employee_code', 'department', 'designation', 'is_active', 'team_id')->get();
     }
 
     public function store(Request $request)
@@ -23,6 +23,7 @@ class UserController extends Controller
             'role' => 'required|in:admin,team_leader,employee',
             'employee_code' => 'nullable|string|max:50|unique:users,employee_code',
             'department' => 'nullable|string|max:255',
+            'designation' => 'nullable|string|max:255',
             'team_id' => 'nullable|exists:teams,id',
         ]);
 
@@ -54,6 +55,7 @@ class UserController extends Controller
             'role' => 'sometimes|in:admin,team_leader,employee',
             'employee_code' => 'nullable|string|max:50|unique:users,employee_code,' . $user->id,
             'department' => 'nullable|string|max:255',
+            'designation' => 'nullable|string|max:255',
             'team_id' => 'nullable|exists:teams,id',
             'is_active' => 'sometimes|boolean',
         ]);
