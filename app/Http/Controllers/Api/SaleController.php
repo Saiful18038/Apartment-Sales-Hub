@@ -31,6 +31,7 @@ class SaleController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'sale_type' => 'required|in:SOLD_CR,SOLD_OS_SS',
             'sale_price' => 'required|numeric|min:0',
+            'sold_price_per_sft' => 'nullable|numeric|min:0',
             'date' => 'required|date',
         ]);
 

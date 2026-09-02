@@ -57,6 +57,9 @@ export const CUSTOMER_STATUS_COLORS = {
 
 export const PROJECT_STATUSES = ["Planning", "Ongoing", "Completed", "Suspended", "Archived"];
 
+// "Client Reference" — how a customer/lead reached us (Customer.reference_source).
+export const CLIENT_REFERENCE_OPTIONS = ["Facebook", "Friend", "Old Data", "Walk-in", "Advertisement", "Other"];
+
 // Team hierarchy / Task management (owner's request) — matches
 // tasks.status/priority enums in the create_tasks_table migration.
 export const TASK_STATUSES = ["todo", "in_progress", "done"];

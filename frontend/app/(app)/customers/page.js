@@ -5,12 +5,12 @@ import { Plus, Pencil, Paperclip } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
-import { CUSTOMER_STATUSES, CUSTOMER_STATUS_COLORS } from "@/lib/status";
+import { CUSTOMER_STATUSES, CUSTOMER_STATUS_COLORS, CLIENT_REFERENCE_OPTIONS } from "@/lib/status";
 import { Btn, Field, inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, EmptyState, Th, Td } from "@/components/ui";
 import DocumentsPanel from "@/components/DocumentsPanel";
 
 const emptyForm = {
-  name: "", phone: "", email: "", nid: "", interested_project_id: "", interested_flat_id: "",
+  name: "", phone: "", email: "", nid: "", reference_source: "", interested_project_id: "", interested_flat_id: "",
   assigned_employee_id: "", status: "New", follow_up_date: "", notes: "",
 };
 
@@ -35,7 +35,7 @@ export default function CustomersPage() {
   };
   const openEdit = (c) => {
     setForm({
-      name: c.name, phone: c.phone || "", email: c.email || "", nid: c.nid || "",
+      name: c.name, phone: c.phone || "", email: c.email || "", nid: c.nid || "", reference_source: c.reference_source || "",
       interested_project_id: c.interested_project_id || "", interested_flat_id: c.interested_flat_id || "",
       assigned_employee_id: c.assigned_employee_id || "", status: c.status,
       follow_up_date: c.follow_up_date ? c.follow_up_date.slice(0, 10) : "", notes: c.notes || "",
@@ -107,6 +107,12 @@ export default function CustomersPage() {
             <Field label="Name"><input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
             <Field label="Phone"><input className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
             <Field label="Email"><input className={inputCls} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+            <Field label="Client Reference">
+              <select className={inputCls} value={form.reference_source} onChange={(e) => setForm({ ...form, reference_source: e.target.value })}>
+                <option value="">—</option>
+                {CLIENT_REFERENCE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </Field>
             <Field label="Status">
               <select className={inputCls} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 {CUSTOMER_STATUSES.map((s) => <option key={s}>{s}</option>)}

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     protected $fillable = [
-        'name', 'phone', 'email', 'nid', 'interested_project_id', 'interested_flat_id',
+        'name', 'phone', 'email', 'nid', 'reference_source', 'interested_project_id', 'interested_flat_id',
         'assigned_employee_id', 'status', 'notes', 'follow_up_date',
     ];
 
@@ -20,11 +20,18 @@ class Customer extends Model
     public function sales()              { return $this->hasMany(Sale::class); }
     public function documents()          { return $this->morphMany(Document::class, 'documentable'); }
 
-    /** Roadmap Phase 11 — Employee Privacy: scope a query to what this user may see. */
+    /**
+     * Roadmap Phase 11 — Employee Privacy: scope a query to what this user
+     * may see. A Team Leader sees their own team's customers only (matches
+     * Sale::scopeVisibleTo's Team hierarchy extension).
+     */
     public function scopeVisibleTo($query, User $user)
     {
         if ($user->isEmployee()) {
             return $query->where('assigned_employee_id', $user->id);
+        }
+        if ($user->isTeamLeader()) {
+            return $query->whereHas('assignedEmployee', fn ($q) => $q->where('team_id', $user->team_id));
         }
         return $query;
     }

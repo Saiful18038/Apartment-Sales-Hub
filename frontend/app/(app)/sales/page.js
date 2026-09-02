@@ -22,7 +22,7 @@ export default function SalesPage() {
   const sellableFlats = allFlats.filter((f) => ["AVAILABLE", "ASSET_BOOKED"].includes(f.status_code));
 
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ flat_id: "", customer_id: "", sale_type: "SOLD_CR", sale_price: "", date: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ flat_id: "", customer_id: "", sale_type: "SOLD_CR", sale_price: "", sold_price_per_sft: "", date: new Date().toISOString().slice(0, 10) });
   const [saveError, setSaveError] = useState("");
   const [actionError, setActionError] = useState("");
   const [docsSale, setDocsSale] = useState(null);
@@ -31,7 +31,8 @@ export default function SalesPage() {
     const firstFlat = sellableFlats[0];
     setForm({
       flat_id: firstFlat?.id || "", customer_id: customers?.[0]?.id || "", sale_type: "SOLD_CR",
-      sale_price: firstFlat ? calcFlatPrice(firstFlat).total : "", date: new Date().toISOString().slice(0, 10),
+      sale_price: firstFlat ? calcFlatPrice(firstFlat).total : "", sold_price_per_sft: firstFlat?.price_per_sft ?? "",
+      date: new Date().toISOString().slice(0, 10),
     });
     setSaveError("");
     setModal(true);
@@ -39,13 +40,17 @@ export default function SalesPage() {
 
   const pickFlat = (flatId) => {
     const f = allFlats.find((x) => String(x.id) === String(flatId));
-    setForm({ ...form, flat_id: flatId, sale_price: f ? f.sub_total ?? calcFlatPrice(f).total : "" });
+    setForm({ ...form, flat_id: flatId, sale_price: f ? f.sub_total ?? calcFlatPrice(f).total : "", sold_price_per_sft: f?.price_per_sft ?? "" });
   };
 
   const save = async () => {
     if (!form.flat_id || !form.customer_id) return;
     try {
-      await api.post("/sales", { ...form, flat_id: Number(form.flat_id), customer_id: Number(form.customer_id), sale_price: parseFloat(form.sale_price) || 0 });
+      await api.post("/sales", {
+        ...form, flat_id: Number(form.flat_id), customer_id: Number(form.customer_id),
+        sale_price: parseFloat(form.sale_price) || 0,
+        sold_price_per_sft: form.sold_price_per_sft === "" ? null : parseFloat(form.sold_price_per_sft),
+      });
       setModal(false);
       refetch();
     } catch (e) {
@@ -147,6 +152,7 @@ export default function SalesPage() {
               <option value="SOLD_OS_SS">Sold (OS/SS)</option>
             </select>
           </Field>
+          <Field label="Sold Price / sft"><input type="number" className={inputCls} value={form.sold_price_per_sft} onChange={(e) => setForm({ ...form, sold_price_per_sft: e.target.value })} /></Field>
           <Field label="Sale Price"><input type="number" className={inputCls} value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: e.target.value })} /></Field>
           <Field label="Date"><input type="date" className={inputCls} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
           {user.role === "employee" && (

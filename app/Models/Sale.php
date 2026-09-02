@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Sale extends Model
 {
     protected $fillable = [
-        'flat_id', 'customer_id', 'employee_id', 'sale_price', 'sale_type',
+        'flat_id', 'customer_id', 'employee_id', 'sale_price', 'sold_price_per_sft', 'sale_type',
         'date', 'status', 'approved_by',
     ];
 
@@ -29,14 +29,18 @@ class Sale extends Model
     }
 
     /**
-     * Roadmap Phase 11 — Employee Privacy (Row-Level Security).
-     * An employee only ever sees their own sales — applied at the QUERY
-     * level (not just hidden in the UI), so the data never leaves the server.
+     * Roadmap Phase 11 — Employee Privacy (Row-Level Security), extended for
+     * the Team hierarchy: a Team Leader only sees their own team's sales —
+     * not another team leader's — same "never leaves the server" principle,
+     * applied at the QUERY level.
      */
     public function scopeVisibleTo($query, User $user)
     {
         if ($user->isEmployee()) {
             return $query->where('employee_id', $user->id);
+        }
+        if ($user->isTeamLeader()) {
+            return $query->whereHas('employee', fn ($q) => $q->where('team_id', $user->team_id));
         }
         return $query;
     }

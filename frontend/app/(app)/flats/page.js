@@ -414,10 +414,15 @@ export default function FlatsPage() {
               <hr className="my-2 border-slate-100" />
               {isSold ? (
                 <>
-                  <div className="flex justify-between"><span className="text-slate-500">Sold By</span><span>{detail.sale.sold_by}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Price / sft</span><span>{fmtBDT(detail.sale.price_per_sft)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Sold Price / sft</span><span>{detail.sale.sold_price_per_sft ? fmtBDT(detail.sale.sold_price_per_sft) : "—"}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Total Sold Amount</span><span className="font-semibold">{fmtBDT(detail.sale.sale_price)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Customer</span><span>{detail.sale.customer}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Customer Id</span><span>{detail.sale.customer_id}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Client Reference</span><span>{detail.sale.client_reference || "—"}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Sale Date</span><span>{detail.sale.date}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Sale Amount</span><span>{fmtBDT(detail.sale.sale_price)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Team Leader</span><span>{detail.sale.team_leader || "—"}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Team Member</span><span>{detail.sale.team_member}</span></div>
                 </>
               ) : (
                 <div className="text-xs text-slate-400 italic">No sale recorded.</div>

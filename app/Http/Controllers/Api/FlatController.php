@@ -16,7 +16,7 @@ class FlatController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Flat::with(['confirmedSale.employee', 'confirmedSale.customer']);
+        $query = Flat::with(['confirmedSale.employee.team.leader', 'confirmedSale.customer']);
         if ($request->filled('project_id')) {
             $query->where('project_id', $request->integer('project_id'));
         }
@@ -25,7 +25,7 @@ class FlatController extends Controller
 
     public function show(Request $request, Flat $flat)
     {
-        $flat->load(['confirmedSale.employee', 'confirmedSale.customer']);
+        $flat->load(['confirmedSale.employee.team.leader', 'confirmedSale.customer']);
         return new FlatResource($flat);
     }
 

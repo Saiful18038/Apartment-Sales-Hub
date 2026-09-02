@@ -48,6 +48,7 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'nid' => 'nullable|string|max:100',
+            'reference_source' => 'nullable|string|max:100',
             'interested_project_id' => 'nullable|exists:projects,id',
             'interested_flat_id' => 'nullable|exists:flats,id',
             'assigned_employee_id' => 'nullable|exists:users,id',

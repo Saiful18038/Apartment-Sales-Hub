@@ -94,20 +94,20 @@ class DemoDataSeeder extends Seeder
         $mkFlat($skyline, 3, 'B-11 (3rd)', 1500, 9800, 'ASSET_BOOKED');
 
         // ---- 4. Customers ----
-        $imran = Customer::create(['name' => 'Imran Kabir', 'phone' => '01711-000111', 'email' => 'imran@mail.com', 'interested_project_id' => $blueHaven->id, 'interested_flat_id' => $f102->id, 'assigned_employee_id' => $rahim->id, 'status' => 'Sold']);
-        $farzana = Customer::create(['name' => 'Farzana Rahman', 'phone' => '01711-000222', 'email' => 'farzana@mail.com', 'interested_project_id' => $blueHaven->id, 'interested_flat_id' => $f105->id, 'assigned_employee_id' => $karim->id, 'status' => 'Sold']);
-        $tanvir = Customer::create(['name' => 'Tanvir Ahmed', 'phone' => '01711-000333', 'email' => 'tanvir@mail.com', 'interested_project_id' => $blueHaven->id, 'interested_flat_id' => $f107->id, 'assigned_employee_id' => $rahim->id, 'status' => 'Booked']);
-        $nusrat = Customer::create(['name' => 'Nusrat Jahan', 'phone' => '01711-000444', 'email' => 'nusrat@mail.com', 'interested_project_id' => $springAura->id, 'interested_flat_id' => $f203->id, 'assigned_employee_id' => $karim->id, 'status' => 'Negotiation', 'notes' => 'Awaiting sale approval']);
-        $sabbir = Customer::create(['name' => 'Sabbir Islam', 'phone' => '01711-000555', 'email' => 'sabbir@mail.com', 'interested_project_id' => $springAura->id, 'interested_flat_id' => $f204->id, 'assigned_employee_id' => $rahim->id, 'status' => 'Sold']);
+        $imran = Customer::create(['name' => 'Imran Kabir', 'phone' => '01711-000111', 'email' => 'imran@mail.com', 'reference_source' => 'Facebook', 'interested_project_id' => $blueHaven->id, 'interested_flat_id' => $f102->id, 'assigned_employee_id' => $rahim->id, 'status' => 'Sold']);
+        $farzana = Customer::create(['name' => 'Farzana Rahman', 'phone' => '01711-000222', 'email' => 'farzana@mail.com', 'reference_source' => 'Friend', 'interested_project_id' => $blueHaven->id, 'interested_flat_id' => $f105->id, 'assigned_employee_id' => $karim->id, 'status' => 'Sold']);
+        $tanvir = Customer::create(['name' => 'Tanvir Ahmed', 'phone' => '01711-000333', 'email' => 'tanvir@mail.com', 'reference_source' => 'Old Data', 'interested_project_id' => $blueHaven->id, 'interested_flat_id' => $f107->id, 'assigned_employee_id' => $rahim->id, 'status' => 'Booked']);
+        $nusrat = Customer::create(['name' => 'Nusrat Jahan', 'phone' => '01711-000444', 'email' => 'nusrat@mail.com', 'reference_source' => 'Facebook', 'interested_project_id' => $springAura->id, 'interested_flat_id' => $f203->id, 'assigned_employee_id' => $karim->id, 'status' => 'Negotiation', 'notes' => 'Awaiting sale approval']);
+        $sabbir = Customer::create(['name' => 'Sabbir Islam', 'phone' => '01711-000555', 'email' => 'sabbir@mail.com', 'reference_source' => 'Friend', 'interested_project_id' => $springAura->id, 'interested_flat_id' => $f204->id, 'assigned_employee_id' => $rahim->id, 'status' => 'Sold']);
 
         // ---- 5. Bookings ----
         Booking::create(['flat_id' => $f107->id, 'customer_id' => $tanvir->id, 'employee_id' => $rahim->id, 'amount' => 500000, 'date' => '2026-08-10', 'status' => 'active']);
         Booking::create(['flat_id' => $f203->id, 'customer_id' => $nusrat->id, 'employee_id' => $karim->id, 'amount' => 400000, 'date' => '2026-08-15', 'status' => 'active']);
 
         // ---- 6. Sales ----
-        $s1 = Sale::create(['flat_id' => $f102->id, 'customer_id' => $imran->id, 'employee_id' => $rahim->id, 'sale_price' => $f102->calcSubTotal(), 'sale_type' => 'SOLD_CR', 'date' => '2026-07-20', 'status' => 'confirmed', 'approved_by' => $admin->id]);
-        $s2 = Sale::create(['flat_id' => $f105->id, 'customer_id' => $farzana->id, 'employee_id' => $karim->id, 'sale_price' => $f105->calcSubTotal(), 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-07-25', 'status' => 'confirmed', 'approved_by' => $admin->id]);
-        $s3 = Sale::create(['flat_id' => $f204->id, 'customer_id' => $sabbir->id, 'employee_id' => $rahim->id, 'sale_price' => $f204->calcSubTotal(), 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-08-05', 'status' => 'confirmed', 'approved_by' => $owner->id]);
+        $s1 = Sale::create(['flat_id' => $f102->id, 'customer_id' => $imran->id, 'employee_id' => $rahim->id, 'sale_price' => $f102->calcSubTotal(), 'sold_price_per_sft' => $f102->price_per_sft - 400, 'sale_type' => 'SOLD_CR', 'date' => '2026-07-20', 'status' => 'confirmed', 'approved_by' => $admin->id]);
+        $s2 = Sale::create(['flat_id' => $f105->id, 'customer_id' => $farzana->id, 'employee_id' => $karim->id, 'sale_price' => $f105->calcSubTotal(), 'sold_price_per_sft' => $f105->price_per_sft - 300, 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-07-25', 'status' => 'confirmed', 'approved_by' => $admin->id]);
+        $s3 = Sale::create(['flat_id' => $f204->id, 'customer_id' => $sabbir->id, 'employee_id' => $rahim->id, 'sale_price' => $f204->calcSubTotal(), 'sold_price_per_sft' => $f204->price_per_sft - 400, 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-08-05', 'status' => 'confirmed', 'approved_by' => $owner->id]);
         Sale::create(['flat_id' => $f203->id, 'customer_id' => $nusrat->id, 'employee_id' => $karim->id, 'sale_price' => $f203->calcSubTotal(), 'sale_type' => 'SOLD_CR', 'date' => '2026-08-22', 'status' => 'pending']);
 
         // ---- 7. Payments ----
