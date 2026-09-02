@@ -9,6 +9,9 @@ import { fmtBDT, fmtDate, calcFlatPrice } from "@/lib/format";
 import { Btn, Field, inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, EmptyState, Th, Td, StatusPill } from "@/components/ui";
 import DocumentsPanel from "@/components/DocumentsPanel";
 
+/** "CUST-00001" — same formatting used on Customers/Bookings/FlatResource. */
+const clientId = (id) => "CUST-" + String(id).padStart(5, "0");
+
 export default function SalesPage() {
   const { user } = useAuth();
   const canApprove = user.role === "owner" || user.role === "admin";
@@ -158,8 +161,8 @@ export default function SalesPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <Th>Flat</Th><Th>Customer</Th>{user.role !== "employee" && <Th>Sold By</Th>}
-                  <Th>Type</Th><Th>Amount</Th><Th>Paid</Th><Th>Due</Th><Th>Date</Th><Th></Th>
+                  <Th>Project</Th><Th>Flat</Th><Th>Client Id</Th>{user.role !== "employee" && <Th>Sold By</Th>}
+                  <Th>Type</Th><Th>Total Sold Amount</Th><Th>Booking Money</Th><Th>Date</Th><Th></Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -236,13 +239,13 @@ function SaleRow({ sale, payments, showEmployee, onDocuments, onEdit }) {
   const paid = payments.filter((p) => p.sale_id === sale.id).reduce((a, p) => a + Number(p.amount), 0);
   return (
     <tr className="hover:bg-slate-50">
+      <Td>{sale.flat?.project?.name || "—"}</Td>
       <Td className="font-medium text-slate-800">{sale.flat?.flat_no}</Td>
-      <Td>{sale.customer?.name}</Td>
+      <Td>{clientId(sale.customer_id)}</Td>
       {showEmployee && <Td>{sale.employee?.name}</Td>}
       <Td><StatusPill code={sale.sale_type} /></Td>
       <Td>{fmtBDT(sale.sale_price)}</Td>
       <Td className="text-green-600">{fmtBDT(paid)}</Td>
-      <Td className="text-red-600">{fmtBDT(sale.sale_price - paid)}</Td>
       <Td>{fmtDate(sale.date)}</Td>
       <Td>
         <div className="flex items-center gap-2">

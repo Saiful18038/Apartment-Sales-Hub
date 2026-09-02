@@ -19,7 +19,7 @@ class SaleController extends Controller
         // Roadmap Phase 11 — query-level scoping, an employee's fetch never
         // even receives another employee's rows over the wire.
         return Sale::visibleTo($request->user())
-            ->with(['flat', 'customer', 'employee'])
+            ->with(['flat.project', 'customer', 'employee'])
             ->latest()
             ->get();
     }
