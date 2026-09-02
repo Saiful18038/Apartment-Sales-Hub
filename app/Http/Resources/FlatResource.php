@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Booking;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,8 +18,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Team hierarchy extension (owner's request): a Sold Out flat's details are
  * visible to Owner/Admin, to the specific employee who made the sale, and
  * to THAT employee's Team Leader — but not to any other Team Leader. See
- * canViewSale() below; mirrors Sale::scopeVisibleTo's same rule for the
- * Sales list page.
+ * canView() below; mirrors Sale::scopeVisibleTo's same rule for the Sales
+ * list page.
+ *
+ * A flat's status_code goes to SOLD_CR/SOLD_OS_SS the moment booking money
+ * is taken (BookingController::store), before any Sale exists — so the
+ * detail block falls back to the active Booking when there's no
+ * confirmedSale yet, showing the same shape of data (customer, employee,
+ * team) plus the booking's target/paid/due figures in place of a sale
+ * price. Once the booking converts (BookingController::convertToSale) the
+ * Booking moves to 'converted' (no longer activeBooking) but an
+ * employee-made Sale starts out 'pending' owner/admin approval, not
+ * 'confirmed' yet — so there's a second fallback to Flat::pendingSale()
+ * before finally showing nothing, otherwise a flat would read as "Sold"
+ * with zero backing detail during that approval window (the same class of
+ * bug fixed for orphaned SOLD_CR flats in an earlier pass).
  */
 class FlatResource extends JsonResource
 {
@@ -46,21 +60,24 @@ class FlatResource extends JsonResource
         ];
 
         if (in_array($this->status_code, ['SOLD_CR', 'SOLD_OS_SS'], true)) {
-            $sale = $this->confirmedSale;
+            $sale = $this->confirmedSale ?? $this->pendingSale;
+            $booking = $sale ? null : $this->activeBooking;
             $user = $request->user();
 
-            if ($sale && self::canViewSale($user, $sale)) {
+            if ($sale && self::canView($user, $sale->employee)) {
                 $customer = $sale->customer;
                 $leader = $sale->employee->team?->leader;
 
                 $data['sale'] = [
+                    'is_booking' => false,
+                    'pending_approval' => $sale->status === 'pending',
                     'sold_by' => $sale->employee->name,
                     'employee_id' => $sale->employee_id,
                     'customer' => $customer->name,
                     // "Generate hoba" — there's no separate customer_code
                     // column; the auto-increment id already is the
                     // auto-generated identity, just formatted for display.
-                    'customer_id' => 'CUST-' . str_pad((string) $customer->id, 5, '0', STR_PAD_LEFT),
+                    'customer_id' => self::customerId($customer->id),
                     'client_reference' => $customer->reference_source,
                     'date' => $sale->date,
                     'price_per_sft' => $this->price_per_sft,
@@ -68,7 +85,26 @@ class FlatResource extends JsonResource
                     'sale_price' => $sale->sale_price,
                     'team_leader' => $leader?->name,
                     'team_member' => $sale->employee->name,
-                ];
+                ] + self::bookingFigures(null);
+            } elseif ($booking && self::canView($user, $booking->employee)) {
+                $customer = $booking->customer;
+                $leader = $booking->employee->team?->leader;
+
+                $data['sale'] = [
+                    'is_booking' => true,
+                    'pending_approval' => false,
+                    'sold_by' => $booking->employee->name,
+                    'employee_id' => $booking->employee_id,
+                    'customer' => $customer->name,
+                    'customer_id' => self::customerId($customer->id),
+                    'client_reference' => $customer->reference_source,
+                    'date' => $booking->date,
+                    'price_per_sft' => $this->price_per_sft,
+                    'sold_price_per_sft' => null, // not negotiated yet — still just booked
+                    'sale_price' => $this->calcSubTotal(), // Total Sold Amount reference figure
+                    'team_leader' => $leader?->name,
+                    'team_member' => $booking->employee->name,
+                ] + self::bookingFigures($booking);
             } else {
                 $data['sale'] = null; // deliberately withheld, not just hidden client-side
             }
@@ -77,11 +113,30 @@ class FlatResource extends JsonResource
         return $data;
     }
 
+    private static function customerId(int $id): string
+    {
+        return 'CUST-' . str_pad((string) $id, 5, '0', STR_PAD_LEFT);
+    }
+
+    /** Booking-specific figures the Sold flat detail needs — null-shaped when there's no booking. */
+    private static function bookingFigures(?Booking $booking): array
+    {
+        if (!$booking) {
+            return ['booking_target_amount' => null, 'booking_paid_amount' => null, 'booking_is_complete' => null];
+        }
+        return [
+            'booking_target_amount' => (float) $booking->amount,
+            'booking_paid_amount' => $booking->paid_amount,
+            'booking_is_complete' => $booking->is_complete,
+        ];
+    }
+
     /**
      * Owner: "Sold out flat details — only Owner, Admin, and the Team
      * Leader whose member sold it can see it; no other Team Leader can."
+     * Same rule for a Sale's employee or a Booking's employee.
      */
-    private static function canViewSale(?User $user, Sale $sale): bool
+    private static function canView(?User $user, User $employee): bool
     {
         if (!$user) {
             return false;
@@ -90,8 +145,8 @@ class FlatResource extends JsonResource
             return true;
         }
         if ($user->isTeamLeader()) {
-            return $sale->employee->team_id !== null && $sale->employee->team_id === $user->team_id;
+            return $employee->team_id !== null && $employee->team_id === $user->team_id;
         }
-        return $sale->employee_id === $user->id;
+        return $employee->id === $user->id;
     }
 }

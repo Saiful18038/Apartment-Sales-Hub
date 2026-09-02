@@ -417,15 +417,39 @@ export default function FlatsPage() {
               <hr className="my-2 border-slate-100" />
               {isSold ? (
                 <>
+                  {detail.sale.is_booking && (
+                    <div className="mb-1 text-xs px-2 py-1 rounded-lg bg-orange-50 text-orange-700 inline-block">
+                      Booking money taken — not yet converted to a Sale
+                    </div>
+                  )}
+                  {detail.sale.pending_approval && (
+                    <div className="mb-1 text-xs px-2 py-1 rounded-lg bg-amber-50 text-amber-700 inline-block">
+                      Awaiting Owner/Admin approval
+                    </div>
+                  )}
                   <div className="flex justify-between"><span className="text-slate-500">Price / sft</span><span>{fmtBDT(detail.sale.price_per_sft)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Sold Price / sft</span><span>{detail.sale.sold_price_per_sft ? fmtBDT(detail.sale.sold_price_per_sft) : "—"}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Total Sold Amount</span><span className="font-semibold">{fmtBDT(detail.sale.sale_price)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Customer</span><span>{detail.sale.customer}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Customer Id</span><span>{detail.sale.customer_id}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Client Reference</span><span>{detail.sale.client_reference || "—"}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Sale Date</span><span>{detail.sale.date}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">{detail.sale.is_booking ? "Booking Date" : "Sale Date"}</span><span>{detail.sale.date}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Team Leader</span><span>{detail.sale.team_leader || "—"}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Team Member</span><span>{detail.sale.team_member}</span></div>
+                  {detail.sale.is_booking && (
+                    <>
+                      <hr className="my-2 border-slate-100" />
+                      <div className="flex justify-between"><span className="text-slate-500">Booking Money (Fix Amount)</span><span>{fmtBDT(detail.sale.booking_target_amount)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Booking Amount Paid</span><span className="font-medium text-[#1F3864]">{fmtBDT(detail.sale.booking_paid_amount)}</span></div>
+                      {detail.sale.booking_is_complete ? (
+                        <div className="mt-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-2 text-xs font-medium">
+                          Booking money complete! Payment process successful.
+                        </div>
+                      ) : (
+                        <div className="flex justify-between"><span className="text-slate-500">Due (of Booking Money)</span><span className="text-red-600">{fmtBDT(detail.sale.booking_target_amount - detail.sale.booking_paid_amount)}</span></div>
+                      )}
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="text-xs text-slate-400 italic">No sale recorded.</div>

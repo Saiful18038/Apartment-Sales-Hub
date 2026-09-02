@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Booking;
+use App\Models\BookingPayment;
 use App\Models\Flat;
+use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
 use App\Notifications\BookingConfirmed;
@@ -17,7 +19,7 @@ class BookingController extends Controller
     public function index(Request $request)
     {
         return Booking::visibleTo($request->user())
-            ->with(['flat', 'customer', 'employee'])
+            ->with(['flat', 'customer', 'employee', 'payments'])
             ->latest()
             ->get();
     }
@@ -27,7 +29,8 @@ class BookingController extends Controller
         $data = $request->validate([
             'flat_id' => 'required|exists:flats,id',
             'customer_id' => 'required|exists:customers,id',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:0.01',
+            'sale_type' => 'required|in:SOLD_CR,SOLD_OS_SS',
             'date' => 'required|date',
         ]);
 
@@ -42,7 +45,12 @@ class BookingController extends Controller
                 'employee_id' => $request->user()->id,
                 'status' => 'active',
             ]);
-            $flat->update(['status_code' => 'ASSET_BOOKED']);
+            // Owner's request: the flat reads as the specific Sold (CR)/
+            // Sold (OS/SS) type immediately — not a generic "Sold Out" —
+            // the moment booking money is taken. FlatResource falls back to
+            // this Booking (via Flat::activeBooking()) for detail/privacy
+            // purposes until it's converted into a confirmedSale.
+            $flat->update(['status_code' => $booking->sale_type]);
             return $booking;
         });
 
@@ -56,6 +64,48 @@ class BookingController extends Controller
         }
 
         return response()->json($booking->load(['flat', 'customer']), 201);
+    }
+
+    /**
+     * One installment toward the booking's fixed target (Booking::amount)
+     * — "যত বার booking money দেবে, তত বার date & time generate হবে": each
+     * call creates its own auto-timestamped row, however many times the
+     * owner's spec allows (1, 2, 3...). Rejects anything that would push
+     * the total past the agreed target, same guard PaymentController uses
+     * against a Sale's due amount.
+     */
+    public function addPayment(Request $request, Booking $booking)
+    {
+        if ($booking->status !== 'active') {
+            return response()->json(['message' => 'This booking is no longer active.'], 422);
+        }
+        if ($request->user()->isEmployee() && $booking->employee_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden — not your booking.'], 403);
+        }
+
+        $data = $request->validate(['amount' => 'required|numeric|min:0.01']);
+
+        $remaining = (float) $booking->amount - $booking->paid_amount;
+        if ($data['amount'] > $remaining) {
+            return response()->json(['message' => 'Amount exceeds the remaining booking target.'], 422);
+        }
+
+        BookingPayment::create([
+            'booking_id' => $booking->id,
+            'amount' => $data['amount'],
+            'paid_at' => now(),
+            'recorded_by' => $request->user()->id,
+        ]);
+
+        ActivityLog::record($request->user(), 'Booking Payment Recorded', "{$booking->flat->flat_no} — {$data['amount']}");
+
+        $booking->refresh();
+        return response()->json([
+            'booking' => $booking,
+            // "Booking money complete! Payment process successful." fires
+            // client-side off this flag the instant the target is reached.
+            'completed' => $booking->is_complete,
+        ]);
     }
 
     public function cancel(Request $request, Booking $booking)
@@ -82,16 +132,34 @@ class BookingController extends Controller
 
         $sale = DB::transaction(function () use ($booking, $request) {
             $isEmployee = $request->user()->isEmployee();
+            $paidSoFar = $booking->paid_amount;
+
             $sale = Sale::create([
                 'flat_id' => $booking->flat_id,
                 'customer_id' => $booking->customer_id,
                 'employee_id' => $booking->employee_id,
                 'sale_price' => $booking->flat->calcSubTotal(),
-                'sale_type' => 'SOLD_CR',
+                'sale_type' => $booking->sale_type,
                 'date' => now()->toDateString(),
                 'status' => $isEmployee ? 'pending' : 'confirmed',
                 'approved_by' => $isEmployee ? null : $request->user()->id,
             ]);
+
+            // Booking money already collected carries over as a Payment
+            // against the new Sale (regardless of pending/confirmed — an
+            // employee's sale still awaiting approval already has real
+            // money behind it) so the customer doesn't get asked to pay it
+            // again, and the Sale's due amount already reflects it.
+            if ($paidSoFar > 0) {
+                Payment::create([
+                    'sale_id' => $sale->id,
+                    'amount' => $paidSoFar,
+                    'date' => now()->toDateString(),
+                    'method' => 'Booking Money',
+                    'recorded_by' => $request->user()->id,
+                ]);
+            }
+
             $booking->update(['status' => 'converted']);
             if ($sale->status === 'confirmed') {
                 $booking->flat()->update(['status_code' => $sale->sale_type]);

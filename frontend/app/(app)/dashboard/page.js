@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
 import { api } from "@/lib/api";
-import { fmtBDT, fmtDateTime } from "@/lib/format";
+import { fmtBDT, fmtDateTime, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER } from "@/lib/status";
 import { StatCard, EmptyState, ErrorBanner, LoadingBlock } from "@/components/ui";
 
@@ -62,19 +62,27 @@ export default function DashboardPage() {
   const totalDue = totalSaleValue - totalPaid;
   const pendingSales = sales.filter((s) => s.status === "pending").length;
 
-  // A flat counts as "sold" for these three cards the moment booking money
-  // is taken — not only once a Booking is converted into a confirmed Sale —
+  // A flat's status_code goes to SOLD_CR/SOLD_OS_SS the instant booking
+  // money is taken (BookingController::store) — before any Sale exists —
   // per the owner's request: booking money already commits the unit, so the
-  // dashboard should reflect that immediately rather than waiting for the
-  // separate conversion/approval step (Roadmap Phase 9/10 still govern the
-  // Booking -> Sale workflow itself; this only changes what the dashboard
-  // counts as "sold"). Active bookings and confirmed sales never double up
-  // here: a flat leaves ASSET_BOOKED for a SOLD_* status_code only when its
-  // booking is actually converted (see BookingController::convertToSale).
+  // dashboard should read it as sold immediately, not only once the Booking
+  // is converted into a confirmed Sale. That means the flats list ALREADY
+  // carries every actively-booked unit under a SOLD_* status_code, so
+  // counting it here too would double it — soldApartmentCount is just the
+  // flat count, full stop.
+  //
+  // "Total Sold Amount" is the full committed value of every such unit
+  // (confirmed sales' actual sale_price, which already reflects any
+  // sold-price/sft discount, plus the full listing price of units still in
+  // an active booking) — distinct from "Total Booking Money", which is only
+  // the cash actually collected so far on those still-active bookings (an
+  // active booking's target Booking Money can be paid in installments; see
+  // Booking::paid_amount).
   const activeBookings = bookings.filter((b) => b.status === "active");
-  const soldApartmentCount = flats.filter((f) => ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code)).length + activeBookings.length;
-  const totalBookingMoney = activeBookings.reduce((a, b) => a + Number(b.amount), 0);
-  const totalSoldAmount = totalSaleValue + totalBookingMoney;
+  const soldApartmentCount = flats.filter((f) => ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code)).length;
+  const activeBookingsFullValue = activeBookings.reduce((a, b) => a + (b.flat ? calcFlatPrice(b.flat).total : 0), 0);
+  const totalBookingMoney = activeBookings.reduce((a, b) => a + Number(b.paid_amount || 0), 0);
+  const totalSoldAmount = totalSaleValue + activeBookingsFullValue;
   const availableCount = flats.filter((f) => f.status_code === "AVAILABLE").length;
 
   return (
@@ -87,7 +95,7 @@ export default function DashboardPage() {
         <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} />
         <StatCard icon={Handshake} label="Confirmed Sales" value={confirmedSales.length} from="#e0ac2b" to="#B7860B" caption={`${pendingSales} pending approval`} />
         <StatCard icon={AlertTriangle} label="Pending Approval" value={pendingSales} from="#f97316" to="#c2410c" caption="Needs owner/admin review" />
-        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Sales + booking money" />
+        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" />
         <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} />
         <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} />
       </div>

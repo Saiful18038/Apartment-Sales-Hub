@@ -23,6 +23,31 @@ class Flat extends Model
     }
 
     /**
+     * The Booking (if any) currently backing a SOLD_CR/SOLD_OS_SS
+     * status_code before it's converted into a confirmedSale — see
+     * FlatResource, which falls back to this when there's no Sale yet.
+     */
+    public function activeBooking()
+    {
+        return $this->hasOne(Booking::class)->where('status', 'active');
+    }
+
+    /**
+     * An employee-made Sale (via BookingController::convertToSale or
+     * SaleController::store) still awaiting owner/admin approval. The flat's
+     * status_code is already SOLD_CR/SOLD_OS_SS at this point (set the
+     * moment booking money was taken) but the Booking has moved to
+     * 'converted' — no longer activeBooking() — and the Sale isn't
+     * 'confirmed' yet, so without this fallback FlatResource would show
+     * "Sold" with no backing detail at all, even to Owner/Admin. See
+     * FlatResource, which checks this last, after confirmedSale/activeBooking.
+     */
+    public function pendingSale()
+    {
+        return $this->hasOne(Sale::class)->where('status', 'pending');
+    }
+
+    /**
      * Roadmap Phase 5 — Price Formula (single source of truth).
      * Sub-Total = (Price/sft × Size) + (Parking Charge × Parking Count) + Utility Charge + Reserve Fund
      *

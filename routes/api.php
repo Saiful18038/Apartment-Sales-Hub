@@ -38,6 +38,7 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::get('/bookings', [BookingController::class, 'index']);
     Route::post('/bookings', [BookingController::class, 'store']);
     Route::post('/bookings/{booking}/convert-to-sale', [BookingController::class, 'convertToSale']);
+    Route::post('/bookings/{booking}/payments', [BookingController::class, 'addPayment']);
     Route::get('/sales', [SaleController::class, 'index']);
     Route::post('/sales', [SaleController::class, 'store']);
     Route::get('/payments', [PaymentController::class, 'index']);
