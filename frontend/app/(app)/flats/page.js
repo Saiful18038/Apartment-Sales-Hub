@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { fmtBDT, fmtLac, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER, PROJECT_STATUSES, statusMeta } from "@/lib/status";
 import { Btn, Field, inputCls, Modal, ErrorBanner, LoadingBlock, EmptyState, StatusPill } from "@/components/ui";
+import PageBackdrop from "@/components/PageBackdrop";
 
 const emptyForm = {
   flat_no: "", floor: "", size_sft: "", price_per_sft: "", parking_charge: 500000, parking_count: 1,
@@ -51,11 +52,11 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
   const floors = [...new Set(sorted.map((f) => f.floor))].sort((a, b) => b - a);
 
   return (
-    <div className="shadow-premium bg-white rounded-xl p-4 flex flex-col">
+    <div className="bg-[#FBF7EC] border border-[#EAE0C4] rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-slate-800 truncate">{project.name}</h3>
+        <h3 className="text-sm font-extrabold text-[#122347] tracking-wide truncate">{project.name}</h3>
         {canEdit && (
-          <button onClick={onAddFlat} className="text-slate-400 hover:text-[#1F3864] p-1 rounded-lg hover:bg-slate-100 transition-colors shrink-0" title="Add Flat">
+          <button onClick={onAddFlat} className="text-[#122347]/40 hover:text-[#122347] p-1 rounded-lg hover:bg-black/5 transition-colors shrink-0" title="Add Flat">
             <Plus size={15} />
           </button>
         )}
@@ -282,18 +283,19 @@ export default function FlatsPage() {
   const loading = projectsLoading || flatsLoading;
 
   return (
+    <PageBackdrop>
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-slate-800">Flats / Visual Floor Map</h2>
+      <h2 className="text-2xl font-extrabold text-[#122347] tracking-tight">Flats / Visual Floor Map</h2>
 
       <ErrorBanner message={error} />
 
-      <div className="shadow-premium bg-white rounded-xl p-3.5 flex flex-wrap items-end gap-3">
+      <div className="bg-white/55 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-wrap items-end gap-3">
         <label className="block w-full sm:w-auto">
-          <span className="block text-xs font-medium text-slate-500 mb-1">Search</span>
+          <span className="block text-xs font-semibold text-[#2c3e63]/70 mb-1">Search</span>
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              className={`${inputCls} pl-8 w-full sm:w-[200px]`}
+              className={`${inputCls} pl-8 w-full sm:w-[200px] !bg-white/80 !border-white/70`}
               placeholder="Name, code, address…"
               value={filterSearch}
               onChange={(e) => setFilterSearch(e.target.value)}
@@ -301,33 +303,33 @@ export default function FlatsPage() {
           </div>
         </label>
         <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
-          <span className="block text-xs font-medium text-slate-500 mb-1">Location</span>
-          <select className={`${inputCls} w-full sm:w-[160px]`} value={filterZoneId} onChange={(e) => setFilterZoneId(e.target.value)}>
+          <span className="block text-xs font-semibold text-[#2c3e63]/70 mb-1">Location</span>
+          <select className={`${inputCls} w-full sm:w-[160px] !bg-white/80 !border-white/70`} value={filterZoneId} onChange={(e) => setFilterZoneId(e.target.value)}>
             <option value="">All Locations</option>
             {(zones || []).map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
           </select>
         </label>
         <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
-          <span className="block text-xs font-medium text-slate-500 mb-1">Status</span>
-          <select className={`${inputCls} w-full sm:w-[150px]`} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <span className="block text-xs font-semibold text-[#2c3e63]/70 mb-1">Status</span>
+          <select className={`${inputCls} w-full sm:w-[150px] !bg-white/80 !border-white/70`} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">All Status</option>
             {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
         <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
-          <span className="block text-xs font-medium text-slate-500 mb-1">Type</span>
-          <select className={`${inputCls} w-full sm:w-[140px]`} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <span className="block text-xs font-semibold text-[#2c3e63]/70 mb-1">Type</span>
+          <select className={`${inputCls} w-full sm:w-[140px] !bg-white/80 !border-white/70`} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
             <option value="">All Types</option>
             <option value="regular">Regular</option>
             <option value="rr">Re-Sale (RR)</option>
           </select>
         </label>
         {filtersActive && (
-          <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 pb-2.5">
+          <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-[#2c3e63]/70 hover:text-[#122347] pb-2.5">
             <X size={13} /> Clear filters
           </button>
         )}
-        <span className="text-xs text-slate-400 ml-auto pb-2.5">
+        <span className="text-xs font-medium text-[#2c3e63]/60 ml-auto pb-2.5">
           {filteredProjects.length} of {(projects || []).length} project{(projects || []).length === 1 ? "" : "s"}
         </span>
       </div>
@@ -357,9 +359,9 @@ export default function FlatsPage() {
             ))}
           </div>
 
-          <div className="shadow-premium bg-white rounded-xl p-4 flex flex-wrap gap-3">
+          <div className="bg-white/55 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-wrap gap-3">
             {STATUS_ORDER.map((c) => (
-              <div key={c} className="flex items-center gap-1.5 text-xs text-slate-500">
+              <div key={c} className="flex items-center gap-1.5 text-xs font-medium text-[#2c3e63]/70">
                 <span className="w-3 h-3 rounded border" style={{ backgroundColor: STATUS[c].fill, borderColor: STATUS[c].border }} />
                 {STATUS[c].label}
               </div>
@@ -541,5 +543,6 @@ export default function FlatsPage() {
         </Modal>
       )}
     </div>
+    </PageBackdrop>
   );
 }
