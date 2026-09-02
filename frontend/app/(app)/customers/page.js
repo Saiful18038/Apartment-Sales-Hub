@@ -122,15 +122,18 @@ export default function CustomersPage() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
-              <tr><Th>Name</Th><Th>Phone</Th><Th>Project Name</Th><Th>Assigned To</Th><Th>Status</Th><Th></Th></tr>
+              <tr>
+                <Th>Client Name</Th><Th>Client Id</Th><Th>Project Name</Th><Th>Flat Number</Th><Th>Team Leader</Th><Th>Status</Th><Th></Th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {customers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50">
                   <Td className="font-medium text-slate-800">{c.name}</Td>
-                  <Td>{c.phone}</Td>
+                  <Td>{clientId(c.id)}</Td>
                   <Td>{c.interested_project?.name || "—"}</Td>
-                  <Td>{c.assigned_employee?.name || "—"}</Td>
+                  <Td>{c.interested_flat?.flat_no || "—"}</Td>
+                  <Td>{c.assigned_employee?.team?.leader?.name || "—"}</Td>
                   <Td><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CUSTOMER_STATUS_COLORS[c.status] || "bg-slate-100 text-slate-600"}`}>{c.status}</span></Td>
                   <Td>
                     <RowMenu
