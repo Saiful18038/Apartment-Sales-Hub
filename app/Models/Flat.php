@@ -25,10 +25,17 @@ class Flat extends Model
     /**
      * Roadmap Phase 5 — Price Formula (single source of truth).
      * Sub-Total = (Price/sft × Size) + (Parking Charge × Parking Count) + Utility Charge + Reserve Fund
+     *
+     * $pricePerSft overrides the flat's listing price_per_sft — pass the
+     * sale's negotiated sold_price_per_sft here when computing what a
+     * customer actually owes (see SaleController::store/update), so a
+     * discount off the listing price actually reduces the total instead of
+     * only being shown as a side-by-side informational figure.
      */
-    public function calcSubTotal(): float
+    public function calcSubTotal(?float $pricePerSft = null): float
     {
-        $basic = (float) $this->price_per_sft * (float) $this->size_sft;
+        $rate = $pricePerSft ?? (float) $this->price_per_sft;
+        $basic = $rate * (float) $this->size_sft;
         $parking = (float) $this->parking_charge * (int) $this->parking_count;
         return $basic + $parking + (float) $this->utility_charge + (float) $this->reserve_fund;
     }

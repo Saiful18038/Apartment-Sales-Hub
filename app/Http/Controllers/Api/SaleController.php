@@ -40,6 +40,14 @@ class SaleController extends Controller
             return response()->json(['message' => 'Flat is not sellable in its current status.'], 422);
         }
 
+        // If a negotiated per-sft price was given, it — not whatever the
+        // client happened to send as sale_price — is the source of truth
+        // for the total, so a discount always actually reduces what the
+        // customer owes instead of just being a side-by-side display figure.
+        if (!empty($data['sold_price_per_sft'])) {
+            $data['sale_price'] = $flat->calcSubTotal((float) $data['sold_price_per_sft']);
+        }
+
         $isEmployee = $request->user()->isEmployee();
 
         $sale = DB::transaction(function () use ($data, $flat, $request, $isEmployee) {
@@ -57,6 +65,30 @@ class SaleController extends Controller
 
         ActivityLog::record($request->user(), 'Sale Created', "{$flat->flat_no} — " . ($sale->status === 'pending' ? 'pending approval' : 'confirmed'));
         return response()->json($sale, 201);
+    }
+
+    /**
+     * Admin/Owner only (see routes/api.php role middleware) — corrects a
+     * sale after the fact (e.g. the negotiated per-sft price was wrong).
+     * Same rule as store(): sold_price_per_sft, when present, drives
+     * sale_price — you can't edit one without the other going stale.
+     */
+    public function update(Request $request, Sale $sale)
+    {
+        $data = $request->validate([
+            'sale_price' => 'sometimes|numeric|min:0',
+            'sold_price_per_sft' => 'nullable|numeric|min:0',
+            'date' => 'sometimes|date',
+        ]);
+
+        if (array_key_exists('sold_price_per_sft', $data) && $data['sold_price_per_sft'] !== null) {
+            $data['sale_price'] = $sale->flat->calcSubTotal((float) $data['sold_price_per_sft']);
+        }
+
+        $sale->update($data);
+        ActivityLog::record($request->user(), 'Sale Updated', $sale->flat->flat_no);
+
+        return response()->json($sale->fresh());
     }
 
     /** Admin/Owner only (see routes/api.php role middleware). */

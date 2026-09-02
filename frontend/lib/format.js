@@ -33,9 +33,18 @@ export function fmtLac(n) {
   return Number.isInteger(lac) ? String(lac) : lac.toFixed(1);
 }
 
-/** Roadmap Phase 5 — Price Formula (mirrors Flat::calcSubTotal() on the API). */
-export function calcFlatPrice(flat) {
-  const basic = (Number(flat.price_per_sft) || 0) * (Number(flat.size_sft) || 0);
+/**
+ * Roadmap Phase 5 — Price Formula (mirrors Flat::calcSubTotal() on the API).
+ * Pass `pricePerSft` to price against a negotiated sold_price_per_sft
+ * instead of the flat's listing price_per_sft — used on the Sales page so
+ * a discount actually reduces the total shown, not just displayed
+ * alongside the full-price total.
+ */
+export function calcFlatPrice(flat, pricePerSft) {
+  const rate = pricePerSft !== undefined && pricePerSft !== null && pricePerSft !== ""
+    ? Number(pricePerSft)
+    : (Number(flat.price_per_sft) || 0);
+  const basic = rate * (Number(flat.size_sft) || 0);
   const parking = (Number(flat.parking_charge) || 0) * (Number(flat.parking_count) || 0);
   const utility = Number(flat.utility_charge) || 0;
   const reserve = Number(flat.reserve_fund) || 0;

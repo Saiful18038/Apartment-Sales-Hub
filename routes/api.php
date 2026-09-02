@@ -83,6 +83,7 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
         Route::patch('/flats/{flat}/status', [FlatController::class, 'changeStatus']);
         Route::post('/flats/{flat}/exchange-parking', [FlatController::class, 'exchangeParking']);
 
+        Route::put('/sales/{sale}', [SaleController::class, 'update']);
         Route::post('/sales/{sale}/approve', [SaleController::class, 'approve']);
         Route::post('/sales/{sale}/reject', [SaleController::class, 'reject']);
 

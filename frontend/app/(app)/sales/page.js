@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Check, X, AlertTriangle, Paperclip } from "lucide-react";
+import { Plus, Pencil, Check, X, AlertTriangle, Paperclip } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -27,11 +27,22 @@ export default function SalesPage() {
   const [actionError, setActionError] = useState("");
   const [docsSale, setDocsSale] = useState(null);
 
+  const [editSale, setEditSale] = useState(null);
+  const [editForm, setEditForm] = useState({ sold_price_per_sft: "", sale_price: "", date: "" });
+  const [editError, setEditError] = useState("");
+
+  // The Sale Price field always follows Sold Price/sft x Size + Parking +
+  // Utility + Reserve Fund (mirrors Flat::calcSubTotal()'s optional
+  // pricePerSft override) — a discount off the listing price must actually
+  // reduce the total, not just show next to it. See SaleController::store's
+  // matching server-side recompute, which is the actual source of truth.
+  const priceForFlat = (flat, soldPricePerSft) => (flat ? calcFlatPrice(flat, soldPricePerSft).total : "");
+
   const openNew = () => {
     const firstFlat = sellableFlats[0];
     setForm({
       flat_id: firstFlat?.id || "", customer_id: customers?.[0]?.id || "", sale_type: "SOLD_CR",
-      sale_price: firstFlat ? calcFlatPrice(firstFlat).total : "", sold_price_per_sft: firstFlat?.price_per_sft ?? "",
+      sale_price: priceForFlat(firstFlat, firstFlat?.price_per_sft), sold_price_per_sft: firstFlat?.price_per_sft ?? "",
       date: new Date().toISOString().slice(0, 10),
     });
     setSaveError("");
@@ -40,7 +51,12 @@ export default function SalesPage() {
 
   const pickFlat = (flatId) => {
     const f = allFlats.find((x) => String(x.id) === String(flatId));
-    setForm({ ...form, flat_id: flatId, sale_price: f ? f.sub_total ?? calcFlatPrice(f).total : "", sold_price_per_sft: f?.price_per_sft ?? "" });
+    setForm({ ...form, flat_id: flatId, sale_price: priceForFlat(f, f?.price_per_sft), sold_price_per_sft: f?.price_per_sft ?? "" });
+  };
+
+  const updateSoldPricePerSft = (value) => {
+    const f = allFlats.find((x) => String(x.id) === String(form.flat_id));
+    setForm({ ...form, sold_price_per_sft: value, sale_price: priceForFlat(f, value) });
   };
 
   const save = async () => {
@@ -55,6 +71,30 @@ export default function SalesPage() {
       refetch();
     } catch (e) {
       setSaveError(e.message || "Sale failed.");
+    }
+  };
+
+  const openEditSale = (s) => {
+    setEditSale(s);
+    setEditForm({ sold_price_per_sft: s.sold_price_per_sft ?? "", sale_price: s.sale_price, date: s.date?.slice(0, 10) || "" });
+    setEditError("");
+  };
+
+  const updateEditSoldPricePerSft = (value) => {
+    setEditForm({ ...editForm, sold_price_per_sft: value, sale_price: priceForFlat(editSale.flat, value) });
+  };
+
+  const saveEditSale = async () => {
+    try {
+      await api.put(`/sales/${editSale.id}`, {
+        sale_price: parseFloat(editForm.sale_price) || 0,
+        sold_price_per_sft: editForm.sold_price_per_sft === "" ? null : parseFloat(editForm.sold_price_per_sft),
+        date: editForm.date,
+      });
+      setEditSale(null);
+      refetch();
+    } catch (e) {
+      setEditError(e.message || "Update failed.");
     }
   };
 
@@ -124,7 +164,10 @@ export default function SalesPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {confirmed.map((s) => (
-                  <SaleRow key={s.id} sale={s} payments={payments || []} showEmployee={user.role !== "employee"} onDocuments={() => setDocsSale(s)} />
+                  <SaleRow
+                    key={s.id} sale={s} payments={payments || []} showEmployee={user.role !== "employee"}
+                    onDocuments={() => setDocsSale(s)} onEdit={canApprove ? () => openEditSale(s) : null}
+                  />
                 ))}
               </tbody>
             </table>
@@ -152,8 +195,8 @@ export default function SalesPage() {
               <option value="SOLD_OS_SS">Sold (OS/SS)</option>
             </select>
           </Field>
-          <Field label="Sold Price / sft"><input type="number" className={inputCls} value={form.sold_price_per_sft} onChange={(e) => setForm({ ...form, sold_price_per_sft: e.target.value })} /></Field>
-          <Field label="Sale Price"><input type="number" className={inputCls} value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: e.target.value })} /></Field>
+          <Field label="Sold Price / sft"><input type="number" className={inputCls} value={form.sold_price_per_sft} onChange={(e) => updateSoldPricePerSft(e.target.value)} /></Field>
+          <Field label="Sale Price (auto — override if needed)"><input type="number" className={inputCls} value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: e.target.value })} /></Field>
           <Field label="Date"><input type="date" className={inputCls} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
           {user.role === "employee" && (
             <div className="text-xs text-amber-600 flex items-center gap-1 mb-2">
@@ -172,11 +215,24 @@ export default function SalesPage() {
           <DocumentsPanel documentableType="sale" documentableId={docsSale.id} />
         </Modal>
       )}
+
+      {editSale && (
+        <Modal title={`Edit Sale — ${editSale.flat?.flat_no}`} onClose={() => setEditSale(null)}>
+          <ErrorBanner message={editError} />
+          <Field label="Sold Price / sft"><input type="number" className={inputCls} value={editForm.sold_price_per_sft} onChange={(e) => updateEditSoldPricePerSft(e.target.value)} /></Field>
+          <Field label="Sale Price (auto — override if needed)"><input type="number" className={inputCls} value={editForm.sale_price} onChange={(e) => setEditForm({ ...editForm, sale_price: e.target.value })} /></Field>
+          <Field label="Date"><input type="date" className={inputCls} value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} /></Field>
+          <div className="flex justify-end gap-2 mt-2">
+            <Btn variant="outline" onClick={() => setEditSale(null)}>Cancel</Btn>
+            <Btn onClick={saveEditSale}>Save</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
 
-function SaleRow({ sale, payments, showEmployee, onDocuments }) {
+function SaleRow({ sale, payments, showEmployee, onDocuments, onEdit }) {
   const paid = payments.filter((p) => p.sale_id === sale.id).reduce((a, p) => a + Number(p.amount), 0);
   return (
     <tr className="hover:bg-slate-50">
@@ -188,7 +244,12 @@ function SaleRow({ sale, payments, showEmployee, onDocuments }) {
       <Td className="text-green-600">{fmtBDT(paid)}</Td>
       <Td className="text-red-600">{fmtBDT(sale.sale_price - paid)}</Td>
       <Td>{fmtDate(sale.date)}</Td>
-      <Td><button onClick={onDocuments} className="text-slate-400 hover:text-slate-600" title="Documents"><Paperclip size={14} /></button></Td>
+      <Td>
+        <div className="flex items-center gap-2">
+          {onEdit && <button onClick={onEdit} className="text-slate-400 hover:text-slate-600" title="Edit"><Pencil size={14} /></button>}
+          <button onClick={onDocuments} className="text-slate-400 hover:text-slate-600" title="Documents"><Paperclip size={14} /></button>
+        </div>
+      </Td>
     </tr>
   );
 }

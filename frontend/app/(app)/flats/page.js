@@ -67,11 +67,14 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
             <div className="flex flex-col gap-1.5">
               {sorted.filter((f) => f.floor === fl).map((f) => {
                 const s = statusMeta(f.status_code);
-                // Roadmap Phase 11 — Employee Privacy. FlatResource already
-                // withholds `sale` on the API for a Sold flat that belongs
-                // to another employee; when that happens, the card must not
-                // leak anything else either (not even the flat number) — an
-                // employee gets nothing beyond "Sold Out" for a colleague's sale.
+                // Roadmap Phase 11 — Employee Privacy, extended for the Team
+                // hierarchy (FlatResource::canViewSale): a Sold flat's
+                // customer/price/who-sold-it is withheld from anyone who
+                // isn't Owner/Admin, that flat's Team Leader, or the
+                // employee who made the sale — but the status itself
+                // ("Sold (CR)"/"Sold (OS/SS)") is inventory classification,
+                // not sensitive, so the card still names it instead of a
+                // generic "(Sold Out)" that threw the CR/OS-SS distinction away.
                 const isSold = ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code);
                 const privacyHidden = isSold && !f.sale;
 
@@ -83,7 +86,7 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
                       className="w-full px-2.5 py-1.5 rounded-[10px] border text-[12px] leading-[1.3] text-center hover:shadow-md transition"
                       style={{ backgroundColor: s.fill, borderColor: s.border, color: s.text }}
                     >
-                      <div className="font-bold opacity-70">(Sold Out)</div>
+                      <div className="font-bold opacity-70">{s.label}</div>
                     </button>
                   );
                 }
@@ -375,9 +378,9 @@ export default function FlatsPage() {
 
         if (privacyHidden) {
           return (
-            <Modal title="(Sold Out)" onClose={() => setDetail(null)}>
+            <Modal title={statusMeta(detail.status_code).label} onClose={() => setDetail(null)}>
               <div className="flex items-center gap-2 text-sm text-slate-500 italic py-2">
-                <Lock size={14} /> This flat has been sold. Details are only visible to the employee who made the sale, and to Owner/Admin.
+                <Lock size={14} /> This flat has been sold. Details are only visible to Owner/Admin, that flat's Team Leader, and the employee who made the sale.
               </div>
             </Modal>
           );

@@ -10,6 +10,7 @@ use App\Models\Flat;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\Sale;
+use App\Models\Team;
 use App\Models\User;
 use App\Models\Zone;
 use Illuminate\Database\Seeder;
@@ -40,8 +41,16 @@ class DemoDataSeeder extends Seeder
         // ---- 2. Users ----
         $owner = User::create(['name' => 'Kamal Hossain', 'email' => 'owner@company.com', 'password' => 'password', 'role' => 'owner', 'department' => 'Management']);
         $admin = User::create(['name' => 'Nasrin Akter', 'email' => 'admin@company.com', 'password' => 'password', 'role' => 'admin', 'department' => 'Operations']);
-        $rahim = User::create(['name' => 'Rahim Uddin', 'email' => 'rahim@company.com', 'password' => 'password', 'role' => 'employee', 'employee_code' => 'EMP-023', 'department' => 'Sales']);
+        $rahim = User::create(['name' => 'Rahim Uddin', 'email' => 'rahim@company.com', 'password' => 'password', 'role' => 'team_leader', 'employee_code' => 'EMP-023', 'department' => 'Sales']);
         $karim = User::create(['name' => 'Karim Sheikh', 'email' => 'karim@company.com', 'password' => 'password', 'role' => 'employee', 'employee_code' => 'EMP-045', 'department' => 'Sales']);
+
+        // Team hierarchy (owner's request) — Rahim leads Karim so the demo
+        // shows a real Team Leader / Team Member pair out of the box,
+        // instead of requiring manual setup via /teams every time the
+        // database is reseeded.
+        $salesSquadA = Team::create(['name' => 'Sales Squad A', 'leader_id' => $rahim->id]);
+        $rahim->update(['team_id' => $salesSquadA->id]);
+        $karim->update(['team_id' => $salesSquadA->id]);
 
         // ---- 3. Zones & Projects ----
         $bashundhara = Zone::create(['name' => 'Bashundhara']);
@@ -105,9 +114,12 @@ class DemoDataSeeder extends Seeder
         Booking::create(['flat_id' => $f203->id, 'customer_id' => $nusrat->id, 'employee_id' => $karim->id, 'amount' => 400000, 'date' => '2026-08-15', 'status' => 'active']);
 
         // ---- 6. Sales ----
-        $s1 = Sale::create(['flat_id' => $f102->id, 'customer_id' => $imran->id, 'employee_id' => $rahim->id, 'sale_price' => $f102->calcSubTotal(), 'sold_price_per_sft' => $f102->price_per_sft - 400, 'sale_type' => 'SOLD_CR', 'date' => '2026-07-20', 'status' => 'confirmed', 'approved_by' => $admin->id]);
-        $s2 = Sale::create(['flat_id' => $f105->id, 'customer_id' => $farzana->id, 'employee_id' => $karim->id, 'sale_price' => $f105->calcSubTotal(), 'sold_price_per_sft' => $f105->price_per_sft - 300, 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-07-25', 'status' => 'confirmed', 'approved_by' => $admin->id]);
-        $s3 = Sale::create(['flat_id' => $f204->id, 'customer_id' => $sabbir->id, 'employee_id' => $rahim->id, 'sale_price' => $f204->calcSubTotal(), 'sold_price_per_sft' => $f204->price_per_sft - 400, 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-08-05', 'status' => 'confirmed', 'approved_by' => $owner->id]);
+        $s1f102PerSft = $f102->price_per_sft - 400;
+        $s2f105PerSft = $f105->price_per_sft - 300;
+        $s3f204PerSft = $f204->price_per_sft - 400;
+        $s1 = Sale::create(['flat_id' => $f102->id, 'customer_id' => $imran->id, 'employee_id' => $rahim->id, 'sale_price' => $f102->calcSubTotal($s1f102PerSft), 'sold_price_per_sft' => $s1f102PerSft, 'sale_type' => 'SOLD_CR', 'date' => '2026-07-20', 'status' => 'confirmed', 'approved_by' => $admin->id]);
+        $s2 = Sale::create(['flat_id' => $f105->id, 'customer_id' => $farzana->id, 'employee_id' => $karim->id, 'sale_price' => $f105->calcSubTotal($s2f105PerSft), 'sold_price_per_sft' => $s2f105PerSft, 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-07-25', 'status' => 'confirmed', 'approved_by' => $admin->id]);
+        $s3 = Sale::create(['flat_id' => $f204->id, 'customer_id' => $sabbir->id, 'employee_id' => $rahim->id, 'sale_price' => $f204->calcSubTotal($s3f204PerSft), 'sold_price_per_sft' => $s3f204PerSft, 'sale_type' => 'SOLD_OS_SS', 'date' => '2026-08-05', 'status' => 'confirmed', 'approved_by' => $owner->id]);
         Sale::create(['flat_id' => $f203->id, 'customer_id' => $nusrat->id, 'employee_id' => $karim->id, 'sale_price' => $f203->calcSubTotal(), 'sale_type' => 'SOLD_CR', 'date' => '2026-08-22', 'status' => 'pending']);
 
         // ---- 7. Payments ----
