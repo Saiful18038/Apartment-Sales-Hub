@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\ParkingExchanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class FlatController extends Controller
 {
@@ -100,10 +101,23 @@ class FlatController extends Controller
         ]);
     }
 
-    /** Quick status change from the Visual Flat Map (Roadmap Phase 7). */
+    /**
+     * Quick status change from the Visual Flat Map (Roadmap Phase 7).
+     * SOLD_CR/SOLD_OS_SS are deliberately excluded — a flat becomes Sold
+     * only through SaleController::store()/approve(), which attaches the
+     * customer/price/employee a Sold flat's detail view depends on. Flipping
+     * status_code straight to Sold here used to leave a flat "sold" with no
+     * Sale row behind it at all — not hidden by privacy, just genuinely
+     * empty, even for Owner/Admin (see FlatResource::canViewSale — it only
+     * ever runs once a $sale exists).
+     */
     public function changeStatus(Request $request, Flat $flat)
     {
-        $data = $request->validate(['status_code' => 'required|exists:asset_statuses,code']);
+        $data = $request->validate([
+            'status_code' => ['required', 'exists:asset_statuses,code', Rule::notIn(['SOLD_CR', 'SOLD_OS_SS'])],
+        ], [
+            'status_code.not_in' => 'A flat can only become Sold through a recorded Sale (see the Sales page) — not a direct status change.',
+        ]);
         $old = $flat->status_code;
         $flat->update(['status_code' => $data['status_code']]);
         ActivityLog::record($request->user(), 'Status Changed', "{$flat->flat_no}: {$old} → {$data['status_code']}");
@@ -128,7 +142,8 @@ class FlatController extends Controller
             'bedroom' => 'nullable|integer|min:0',
             'bathroom' => 'nullable|integer|min:0',
             'balcony' => 'nullable|integer|min:0',
-            'status_code' => 'nullable|exists:asset_statuses,code',
+            // Same reasoning as changeStatus() above — Sold only via a Sale.
+            'status_code' => ['nullable', 'exists:asset_statuses,code', Rule::notIn(['SOLD_CR', 'SOLD_OS_SS'])],
             'notes' => 'nullable|string',
         ]);
     }

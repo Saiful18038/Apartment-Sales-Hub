@@ -73,7 +73,7 @@ class DemoDataSeeder extends Seeder
         $mkFlat($blueHaven, 9, 'A-2241 (9th)', 1650, 13200, 'AVAILABLE');
         $f102 = $mkFlat($blueHaven, 8, 'A-2241 (8th)', 1650, 13200, 'SOLD_CR');
         $mkFlat($blueHaven, 7, 'A-2241 (7th)', 1650, 12000, 'LAND_OWNER');
-        $mkFlat($blueHaven, 6, 'A-2241 (6th)', 1650, 13000, 'SOLD_CR');
+        $mkFlat($blueHaven, 6, 'A-2241 (6th)', 1650, 13000, 'AVAILABLE');
         $f105 = $mkFlat($blueHaven, 5, 'A-2241 (5th)', 1650, 12800, 'SOLD_OS_SS');
         $mkFlat($blueHaven, 4, 'A-2241 (4th)', 1650, 12000, 'LAND_OWNER');
         $f107 = $mkFlat($blueHaven, 3, 'A-2241 (3rd)', 1650, 12400, 'ASSET_BOOKED');
@@ -89,7 +89,7 @@ class DemoDataSeeder extends Seeder
         $mkFlat($springAura, 2, 'A (2nd)', 1770, 11800, 'AVAILABLE');
 
         $mkFlat($nordica, 9, 'A-1808 (9th)', 1600, 15200, 'AVAILABLE');
-        $mkFlat($nordica, 8, 'A-1808 (8th)', 1600, 15000, 'SOLD_CR');
+        $mkFlat($nordica, 8, 'A-1808 (8th)', 1600, 15000, 'AVAILABLE');
         $mkFlat($nordica, 6, 'A-1808 (6th)', 1600, 14400, 'AVAILABLE');
         $mkFlat($nordica, 5, 'A-1808 (5th)', 1600, 14400, 'LAND_OWNER');
         $mkFlat($nordica, 4, 'A-1808 (4th)', 1600, 14200, 'AVAILABLE');
@@ -97,7 +97,7 @@ class DemoDataSeeder extends Seeder
         $mkFlat($palolika, 5, 'A-5', 1200, 9500, 'RESALE_RR');
 
         $mkFlat($skyline, 8, 'B-11 (8th)', 1500, 10500, 'AVAILABLE');
-        $mkFlat($skyline, 6, 'B-11 (6th)', 1500, 10200, 'SOLD_CR');
+        $mkFlat($skyline, 6, 'B-11 (6th)', 1500, 10200, 'AVAILABLE');
         $mkFlat($skyline, 5, 'B-11 (5th)', 1500, 10000, 'READY');
         $mkFlat($skyline, 4, 'B-11 (4th)', 1500, 9800, 'AVAILABLE');
         $mkFlat($skyline, 3, 'B-11 (3rd)', 1500, 9800, 'ASSET_BOOKED');
