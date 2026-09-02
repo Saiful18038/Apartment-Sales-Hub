@@ -12,7 +12,7 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         return Customer::visibleTo($request->user())
-            ->with(['interestedProject', 'interestedFlat', 'assignedEmployee'])
+            ->with(['interestedProject', 'interestedFlat', 'assignedEmployee.team.leader'])
             ->latest()
             ->get();
     }

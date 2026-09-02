@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Pencil, Paperclip } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Paperclip, MoreVertical, Eye } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -14,19 +14,65 @@ const emptyForm = {
   assigned_employee_id: "", status: "New", follow_up_date: "", notes: "",
 };
 
+/** "CUST-00001" — same formatting FlatResource uses for a Sold flat's Customer Id. */
+const clientId = (id) => "CUST-" + String(id).padStart(5, "0");
+
+function RowMenu({ onView, onEdit, onDocuments }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const pick = (fn) => { setOpen(false); fn(); };
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button onClick={() => setOpen((o) => !o)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+        <MoreVertical size={15} />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-20 py-1 text-sm">
+          <button onClick={() => pick(onView)} className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50">
+            <Eye size={13} /> View Details
+          </button>
+          {onEdit && (
+            <button onClick={() => pick(onEdit)} className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50">
+              <Pencil size={13} /> Edit
+            </button>
+          )}
+          <button onClick={() => pick(onDocuments)} className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50">
+            <Paperclip size={13} /> Documents
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CustomersPage() {
   const { user } = useAuth();
   const canEdit = user.role === "owner" || user.role === "admin";
 
   const { data: customers, loading, error, refetch } = useApi("/customers");
   const { data: projects } = useApi("/projects");
+  const { data: flatsRes } = useApi("/flats");
   const { data: usersRes } = useApi(canEdit ? "/users" : null, { skip: !canEdit });
   const employees = (usersRes || []).filter((u) => u.role === "employee");
+  const allFlats = flatsRes?.data || [];
 
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saveError, setSaveError] = useState("");
   const [docsCustomer, setDocsCustomer] = useState(null);
+  const [detailCustomer, setDetailCustomer] = useState(null);
+
+  const flatsInForm = allFlats.filter((f) => String(f.project_id) === String(form.interested_project_id));
 
   const openNew = () => {
     setForm({ ...emptyForm, interested_project_id: projects?.[0]?.id || "", assigned_employee_id: user.role === "employee" ? user.id : employees[0]?.id || "" });
@@ -76,7 +122,7 @@ export default function CustomersPage() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
-              <tr><Th>Name</Th><Th>Phone</Th><Th>Interested In</Th><Th>Assigned To</Th><Th>Status</Th><Th></Th></tr>
+              <tr><Th>Name</Th><Th>Phone</Th><Th>Project Name</Th><Th>Assigned To</Th><Th>Status</Th><Th></Th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {customers.map((c) => (
@@ -87,10 +133,11 @@ export default function CustomersPage() {
                   <Td>{c.assigned_employee?.name || "—"}</Td>
                   <Td><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CUSTOMER_STATUS_COLORS[c.status] || "bg-slate-100 text-slate-600"}`}>{c.status}</span></Td>
                   <Td>
-                    <div className="flex gap-2">
-                      <button onClick={() => setDocsCustomer(c)} className="text-slate-400 hover:text-slate-600" title="Documents"><Paperclip size={14} /></button>
-                      <button onClick={() => openEdit(c)} className="text-slate-400 hover:text-slate-600"><Pencil size={14} /></button>
-                    </div>
+                    <RowMenu
+                      onView={() => setDetailCustomer(c)}
+                      onEdit={canEdit || c.assigned_employee_id === user.id ? () => openEdit(c) : null}
+                      onDocuments={() => setDocsCustomer(c)}
+                    />
                   </Td>
                 </tr>
               ))}
@@ -121,14 +168,27 @@ export default function CustomersPage() {
             <Field label="Follow-up Date">
               <input type="date" className={inputCls} value={form.follow_up_date} onChange={(e) => setForm({ ...form, follow_up_date: e.target.value })} />
             </Field>
-            <Field label="Interested Project">
-              <select className={inputCls} value={form.interested_project_id} onChange={(e) => setForm({ ...form, interested_project_id: e.target.value })}>
+            <Field label="Project Name">
+              <select
+                className={inputCls} value={form.interested_project_id}
+                onChange={(e) => setForm({ ...form, interested_project_id: e.target.value, interested_flat_id: "" })}
+              >
                 <option value="">—</option>
                 {(projects || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </Field>
+            <Field label="Flat Number">
+              <select
+                className={inputCls} value={form.interested_flat_id}
+                onChange={(e) => setForm({ ...form, interested_flat_id: e.target.value })}
+                disabled={!form.interested_project_id}
+              >
+                <option value="">—</option>
+                {flatsInForm.map((f) => <option key={f.id} value={f.id}>{f.flat_no}</option>)}
+              </select>
+            </Field>
             {canEdit && (
-              <Field label="Assigned Employee">
+              <Field label="Assigned To Team Member">
                 <select className={inputCls} value={form.assigned_employee_id} onChange={(e) => setForm({ ...form, assigned_employee_id: e.target.value })}>
                   <option value="">—</option>
                   {employees.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -140,6 +200,26 @@ export default function CustomersPage() {
           <div className="flex justify-end gap-2 mt-2">
             <Btn variant="outline" onClick={() => setModal(null)}>Cancel</Btn>
             <Btn onClick={save}>Save</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {detailCustomer && (
+        <Modal title={detailCustomer.name} onClose={() => setDetailCustomer(null)}>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-slate-500">Name</span><span>{detailCustomer.name}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Phone</span><span>{detailCustomer.phone || "—"}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Client Id</span><span>{clientId(detailCustomer.id)}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Client Reference</span><span>{detailCustomer.reference_source || "—"}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Project Name</span><span>{detailCustomer.interested_project?.name || "—"}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Flat Number</span><span>{detailCustomer.interested_flat?.flat_no || "—"}</span></div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500">Status</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CUSTOMER_STATUS_COLORS[detailCustomer.status] || "bg-slate-100 text-slate-600"}`}>{detailCustomer.status}</span>
+            </div>
+            <hr className="my-2 border-slate-100" />
+            <div className="flex justify-between"><span className="text-slate-500">Team Leader</span><span>{detailCustomer.assigned_employee?.team?.leader?.name || "—"}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Assigned To Team Member</span><span>{detailCustomer.assigned_employee?.name || "—"}</span></div>
           </div>
         </Modal>
       )}
