@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { fmtBDT, fmtDateTime, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER } from "@/lib/status";
 import { StatCard, EmptyState, ErrorBanner, LoadingBlock } from "@/components/ui";
+import PageBackdrop from "@/components/PageBackdrop";
 
 export default function DashboardPage() {
   const [state, setState] = useState({ loading: true, error: "" });
@@ -86,7 +87,9 @@ export default function DashboardPage() {
   const availableCount = flats.filter((f) => f.status_code === "AVAILABLE").length;
 
   return (
+    <PageBackdrop>
     <div className="space-y-5">
+      <h2 className="text-[32px] font-extrabold text-[#101F3D] tracking-tight">Dashboard</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} />
         <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} />
@@ -100,12 +103,12 @@ export default function DashboardPage() {
         <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} />
       </div>
 
-      <div className="shadow-premium bg-white rounded-2xl p-5">
+      <div className="bg-[#FBF7EC] border border-[#EAE0C4] rounded-[22px] shadow-lg shadow-black/5 p-5">
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1F3864]/10 to-[#1F3864]/5 flex items-center justify-center text-[#1F3864]">
             <BarChart3 size={16} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800">Flat Status Breakdown</h3>
+          <h3 className="text-sm font-extrabold text-[#122347]">Flat Status Breakdown</h3>
         </div>
         <div style={{ width: "100%", height: 250 }}>
           <ResponsiveContainer>
@@ -126,30 +129,30 @@ export default function DashboardPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-slate-100">
+        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-[#EAE0C4]">
           {byStatus.map((d) => (
-            <div key={d.code} className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <div key={d.code} className="flex items-center gap-1.5 text-xs font-medium text-[#122347]/60">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
-              {d.label} <span className="text-slate-400">({d.count})</span>
+              {d.label} <span className="text-[#122347]/40">({d.count})</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="shadow-premium bg-white rounded-2xl p-5">
-        <h3 className="text-sm font-bold text-slate-800 mb-4">Recent Activity</h3>
+      <div className="bg-[#FBF7EC] border border-[#EAE0C4] rounded-[22px] shadow-lg shadow-black/5 p-5">
+        <h3 className="text-sm font-extrabold text-[#122347] mb-4">Recent Activity</h3>
         <div className="space-y-0">
           {activity.slice(0, 6).map((a, i) => (
             <div key={a.id} className="relative flex items-start gap-3.5 text-sm pb-4 last:pb-0">
               {i < Math.min(activity.length, 6) - 1 && (
-                <span className="absolute left-[5px] top-4 bottom-0 w-px bg-slate-100" />
+                <span className="absolute left-[5px] top-4 bottom-0 w-px bg-[#EAE0C4]" />
               )}
               <span className="mt-1.5 w-[11px] h-[11px] rounded-full bg-[#1F3864]/10 border-2 border-[#1F3864]/30 shrink-0" />
               <div className="flex-1 min-w-0">
-                <span className="text-slate-700">
-                  <b className="text-slate-800">{a.user_name}</b> — {a.action}: {a.details}
+                <span className="text-[#122347]/80">
+                  <b className="text-[#122347]">{a.user_name}</b> — {a.action}: {a.details}
                 </span>
-                <div className="text-xs text-slate-400 mt-0.5">{fmtDateTime(a.created_at)}</div>
+                <div className="text-xs text-[#122347]/40 mt-0.5">{fmtDateTime(a.created_at)}</div>
               </div>
             </div>
           ))}
@@ -157,5 +160,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </PageBackdrop>
   );
 }

@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { STATUS, STATUS_ORDER, PROJECT_STATUSES } from "@/lib/status";
 import { Btn, Field, inputCls, Modal, ErrorBanner, LoadingBlock, EmptyState } from "@/components/ui";
 import DocumentsPanel from "@/components/DocumentsPanel";
-import PageBackdrop from "@/components/PageBackdrop";
+import PageBackdrop, { PalmFrond } from "@/components/PageBackdrop";
 
 const emptyForm = {
   zone_id: "", type: "regular", name: "", code: "", address: "", road_facing: "",
@@ -90,17 +90,19 @@ export default function ProjectsPage() {
     <PageBackdrop>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xl font-extrabold text-[#122347] tracking-tight">Projects</h2>
+          <h2 className="text-[32px] font-extrabold text-[#101F3D] tracking-tight">Projects</h2>
           {canEdit && (
-            <Btn onClick={openNew} className="!rounded-full !px-5 !py-2.5 !shadow-lg !shadow-[#122347]/30">
-              <Plus size={15} /> Add Project
+            <Btn onClick={openNew} className="!rounded-full !px-6 !py-3 !shadow-lg !shadow-[#101F3D]/30">
+              <Plus size={16} /> Add Project
             </Btn>
           )}
         </div>
 
         <ErrorBanner message={error} />
 
-        <div className="bg-white/55 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-wrap items-end gap-3">
+        <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-[24px] shadow-lg shadow-black/5 p-5 flex flex-wrap items-end gap-4 relative overflow-hidden">
+          <PalmFrond className="pointer-events-none absolute -top-2 right-6 w-14 h-14 text-[#D9B87A] rotate-[10deg] opacity-80" />
+          <PalmFrond className="pointer-events-none absolute -bottom-3 -left-3 w-12 h-12 text-[#D9B87A] rotate-[195deg] opacity-70" />
           <label className="block w-full sm:w-auto">
             <span className="block text-xs font-semibold text-[#2c3e63]/70 mb-1">Search</span>
             <div className="relative">
@@ -148,45 +150,45 @@ export default function ProjectsPage() {
         {loading ? (
           <LoadingBlock />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {filteredProjects.map((p) => {
               const counts = p.status_counts || {};
               return (
-                <div key={p.id} className="bg-[#FBF7EC] rounded-2xl border border-[#EAE0C4] p-4 shadow-lg shadow-black/5">
+                <div key={p.id} className="bg-[#FBF7EC] rounded-[22px] border border-[#EAE0C4] p-5 shadow-lg shadow-black/5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-extrabold tracking-wide text-[#122347]">{p.name}</div>
-                      <div className="text-xs text-[#122347]/50 mt-0.5">{p.zone?.name} · {p.address}</div>
-                      <div className="text-xs text-[#122347]/50">{p.road_facing} · {p.land_katha ?? "—"} Katha · {p.total_floors} Floors</div>
+                      <div className="text-[17px] font-extrabold tracking-wide text-[#101F3D]">{p.name}</div>
+                      <div className="text-[13px] text-[#101F3D]/55 mt-1">{p.zone?.name} · {p.address}</div>
+                      <div className="text-[13px] text-[#101F3D]/55">{p.road_facing} · {p.land_katha ?? "—"} Katha · {p.total_floors} Floors</div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <button onClick={() => setDocsProject(p)} className="text-[#122347]/40 hover:text-[#122347]" title="Documents">
-                        <Paperclip size={14} />
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => setDocsProject(p)} className="text-[#101F3D]/45 hover:text-[#101F3D]" title="Documents">
+                        <Paperclip size={15} />
                       </button>
                       {canEdit && (
                         <>
-                          <button onClick={() => openEdit(p)} className="text-[#122347]/40 hover:text-[#122347]">
-                            <Pencil size={14} />
+                          <button onClick={() => openEdit(p)} className="text-[#101F3D]/45 hover:text-[#101F3D]">
+                            <Pencil size={15} />
                           </button>
-                          <button onClick={() => remove(p.id)} className="text-[#122347]/40 hover:text-red-500">
-                            <Trash2 size={14} />
+                          <button onClick={() => remove(p.id)} className="text-[#101F3D]/45 hover:text-red-500">
+                            <Trash2 size={15} />
                           </button>
                         </>
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold tracking-wide ${p.type === "rr" ? "bg-[#F6E3E8] text-[#9D3E5C]" : "bg-[#EFE6C8] text-[#8A6D1E]"}`}>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <span className={`text-xs px-3 py-1.5 rounded-full font-bold tracking-wide ${p.type === "rr" ? "bg-[#F6E3E8] text-[#9D3E5C]" : "bg-[#EFE6C8] text-[#8A6D1E]"}`}>
                       {p.type === "rr" ? "RE-SALE" : "REGULAR"}
                     </span>
-                    <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-[#DCEAFB] text-[#1D4ED8]">{p.status}</span>
-                    <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-[#E7ECF5] text-[#475569]">Total {p.flats_count ?? 0}</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full font-bold bg-[#DCEAFB] text-[#1D4ED8]">{p.status}</span>
+                    <span className="text-xs px-3 py-1.5 rounded-full font-bold bg-[#E7ECF5] text-[#475569]">Total {p.flats_count ?? 0}</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2.5">
                     {STATUS_ORDER.filter((c) => counts[c] > 0).map((c) => (
                       <span
                         key={c}
-                        className="text-[10px] px-2.5 py-1 rounded-full font-semibold border"
+                        className="text-xs px-3 py-1.5 rounded-full font-semibold border"
                         style={{ backgroundColor: STATUS[c].fill, borderColor: STATUS[c].border, color: STATUS[c].text }}
                       >
                         {STATUS[c].label} {counts[c]}

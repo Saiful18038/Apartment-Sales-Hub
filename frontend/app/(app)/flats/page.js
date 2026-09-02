@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { fmtBDT, fmtLac, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER, PROJECT_STATUSES, statusMeta } from "@/lib/status";
 import { Btn, Field, inputCls, Modal, ErrorBanner, LoadingBlock, EmptyState, StatusPill } from "@/components/ui";
-import PageBackdrop from "@/components/PageBackdrop";
+import PageBackdrop, { PalmFrond } from "@/components/PageBackdrop";
 
 const emptyForm = {
   flat_no: "", floor: "", size_sft: "", price_per_sft: "", parking_charge: 500000, parking_count: 1,
@@ -52,7 +52,7 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
   const floors = [...new Set(sorted.map((f) => f.floor))].sort((a, b) => b - a);
 
   return (
-    <div className="bg-[#FBF7EC] border border-[#EAE0C4] rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-col">
+    <div className="bg-[#FBF7EC] border border-[#EAE0C4] rounded-[22px] shadow-lg shadow-black/5 p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-extrabold text-[#122347] tracking-wide truncate">{project.name}</h3>
         {canEdit && (
@@ -285,11 +285,13 @@ export default function FlatsPage() {
   return (
     <PageBackdrop>
     <div className="space-y-4">
-      <h2 className="text-2xl font-extrabold text-[#122347] tracking-tight">Flats / Visual Floor Map</h2>
+      <h2 className="text-[32px] font-extrabold text-[#101F3D] tracking-tight">Flats / Visual Floor Map</h2>
 
       <ErrorBanner message={error} />
 
-      <div className="bg-white/55 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-wrap items-end gap-3">
+      <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-[24px] shadow-lg shadow-black/5 p-5 flex flex-wrap items-end gap-4 relative overflow-hidden">
+        <PalmFrond className="pointer-events-none absolute -top-2 right-6 w-14 h-14 text-[#D9B87A] rotate-[10deg] opacity-80" />
+        <PalmFrond className="pointer-events-none absolute -bottom-3 -left-3 w-12 h-12 text-[#D9B87A] rotate-[195deg] opacity-70" />
         <label className="block w-full sm:w-auto">
           <span className="block text-xs font-semibold text-[#2c3e63]/70 mb-1">Search</span>
           <div className="relative">
@@ -359,7 +361,7 @@ export default function FlatsPage() {
             ))}
           </div>
 
-          <div className="bg-white/55 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg shadow-black/5 p-4 flex flex-wrap gap-3">
+          <div className="bg-white/50 backdrop-blur-md border border-white/60 rounded-[24px] shadow-lg shadow-black/5 p-4 flex flex-wrap gap-3">
             {STATUS_ORDER.map((c) => (
               <div key={c} className="flex items-center gap-1.5 text-xs font-medium text-[#2c3e63]/70">
                 <span className="w-3 h-3 rounded border" style={{ backgroundColor: STATUS[c].fill, borderColor: STATUS[c].border }} />
