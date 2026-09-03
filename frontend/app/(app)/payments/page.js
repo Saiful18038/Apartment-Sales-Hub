@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Plus, Paperclip, ClipboardList, FileSpreadsheet, Building2, Upload, Trash2, Check, Pencil, X } from "lucide-react";
+import { Plus, Paperclip, FileSpreadsheet, Building2, Upload, Trash2, Check, Pencil, X } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -17,13 +17,16 @@ const clientId = (id) => "CUST-" + String(id).padStart(5, "0");
 
 /**
  * Owner's request: instead of a flat Total/Paid/Due row plus a separate
- * page-wide Payment History list, each sale gets one "Payment Schedule"
- * — every installment, oldest to newest ("A to Z"), with a running
- * paid/due balance — plus a real, round-trippable .xlsx Excel Sheet: one
- * click downloads it (downloadSchedule), and the same shape of file can be
- * uploaded back in (parseSpreadsheet) to bulk-add payments. Uses SheetJS
- * (xlsx) for genuine Excel read/write rather than a hand-rolled CSV, so a
- * file opened and edited in real Excel round-trips correctly.
+ * page-wide Payment History list, each sale gets one "Excel Sheet" — the
+ * single entry point for that sale's whole payment ledger (there used to
+ * be a separate "Payment Schedule" button too; the owner asked for just
+ * one). Opening it shows every installment, oldest to newest ("A to Z"),
+ * with a running paid/due balance, full Add/Edit/View/Delete on each row,
+ * and a real, round-trippable .xlsx file: one click downloads it
+ * (downloadSchedule), and the same shape of file can be uploaded back in
+ * (parseSpreadsheet) to bulk-add payments. Uses SheetJS (xlsx) for genuine
+ * Excel read/write rather than a hand-rolled CSV, so a file opened and
+ * edited in real Excel round-trips correctly.
  */
 function downloadSchedule(sale, schedulePayments) {
   const rows = [["Date", "Method", "Amount", "Recorded By", "Running Paid", "Running Due"]];
@@ -239,7 +242,7 @@ export default function PaymentsPage() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
-              <tr><Th>Project</Th><Th>Flat</Th><Th>Client Id</Th><Th>Payment Schedule + Excel Sheet</Th></tr>
+              <tr><Th>Project</Th><Th>Flat</Th><Th>Client Id</Th><Th>Excel Sheet</Th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {confirmedSales.map((s) => (
@@ -248,18 +251,9 @@ export default function PaymentsPage() {
                   <Td className="font-medium text-slate-800">{s.flat?.flat_no}</Td>
                   <Td>{clientId(s.customer_id)}</Td>
                   <Td>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => openSchedule(s)} className="flex items-center gap-1.5 text-xs font-medium text-[#1F3864] hover:underline">
-                        <ClipboardList size={14} /> Payment Schedule
-                      </button>
-                      <button
-                        onClick={() => downloadSchedule(s, paymentsFor(s.id))}
-                        className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:underline"
-                        title="Download this sale's payment schedule as Excel (CSV)"
-                      >
-                        <FileSpreadsheet size={14} /> Excel Sheet
-                      </button>
-                    </div>
+                    <button onClick={() => openSchedule(s)} className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:underline">
+                      <FileSpreadsheet size={14} /> Excel Sheet
+                    </button>
                   </Td>
                 </tr>
               ))}
@@ -273,7 +267,7 @@ export default function PaymentsPage() {
         const rows = paymentsFor(scheduleSale.id);
         let running = 0;
         return (
-          <Modal title={`Payment Schedule — ${scheduleSale.flat?.flat_no}`} onClose={() => setScheduleSale(null)} wide>
+          <Modal title={`Excel Sheet — ${scheduleSale.flat?.flat_no}`} onClose={() => setScheduleSale(null)} wide>
             <div className="space-y-2 text-sm mb-4">
               <div className="flex justify-between"><span className="text-slate-500">Project</span><span>{scheduleSale.flat?.project?.name || "—"}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Flat</span><span className="font-medium">{scheduleSale.flat?.flat_no}</span></div>
