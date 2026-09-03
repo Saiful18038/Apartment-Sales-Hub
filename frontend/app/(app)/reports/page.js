@@ -40,12 +40,14 @@ function renderSliceLabel({ cx, cy, midAngle, outerRadius, percent, name }) {
 
 /**
  * Part-to-whole "at a glance" only (dataviz skill: pie is fine for that,
- * bad past ~6 segments) — beyond 5 teams the smallest ones fold into a
- * fixed grey "Other" slice rather than adding a 7th generated hue.
+ * bad past ~6 segments) — beyond 5 rows the smallest ones fold into a
+ * fixed grey "Other" slice rather than adding a 7th generated hue. Used
+ * for both the page-level Team breakdown and, inside a team's own detail
+ * modal, that team's per-member breakdown — same shape, different rows.
  */
-function toPieSlices(teamRows, valueKey) {
-  const sorted = teamRows
-    .map((r) => ({ name: r.team, value: Number(r[valueKey]) || 0 }))
+function toPieSlices(rows, nameKey, valueKey) {
+  const sorted = rows
+    .map((r) => ({ name: r[nameKey], value: Number(r[valueKey]) || 0 }))
     .filter((s) => s.value > 0)
     .sort((a, b) => b.value - a.value);
   if (sorted.length <= 5) return sorted;
@@ -105,8 +107,8 @@ export default function ReportsPage() {
   const teamGrand = teamData?.grand_total;
   const [detailTeam, setDetailTeam] = useState(null);
 
-  const revenueSlices = toPieSlices(teamRows, "total_revenue");
-  const bookingSlices = toPieSlices(teamRows, "total_booking");
+  const revenueSlices = toPieSlices(teamRows, "team", "total_revenue");
+  const bookingSlices = toPieSlices(teamRows, "team", "total_booking");
 
   return (
     <div className="space-y-5">
@@ -214,6 +216,21 @@ export default function ReportsPage() {
               </tbody>
             </table>
           </div>
+
+          {(detailTeam.members || []).some((m) => m.total_revenue > 0 || m.total_booking > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <TeamPieChart
+                title="Revenue Share within Team"
+                slices={toPieSlices(detailTeam.members || [], "name", "total_revenue")}
+                formatValue={fmtBDT}
+              />
+              <TeamPieChart
+                title="Booking Share within Team"
+                slices={toPieSlices(detailTeam.members || [], "name", "total_booking")}
+                formatValue={(v) => `${v} booking${v === 1 ? "" : "s"}`}
+              />
+            </div>
+          )}
         </Modal>
       )}
     </div>
