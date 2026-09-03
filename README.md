@@ -100,12 +100,12 @@ run the scheduler continuously in dev: `php artisan schedule:work`.
   Orange=Asset Booked, Red text=Ready, White=Available.
 - **Zone/Area unification (§1.1)** — one `zones` table, no duplicate concept.
 - **project_type field (§1.1)** — `projects.type` enum (`regular`/`rr`).
-- **RR count consistency (§2.3)** — `ReportController::floorAndStockSummary`
-  computes RR/Regular project and apartment totals *live* from the `flats`
-  table every time, instead of a separately-maintained count. This is the
-  structural fix for the "RR total 25 vs 24" mismatch bug described in the
-  roadmap — the two numbers literally cannot drift apart because there is
-  only one source of truth.
+- **RR count consistency (§2.3)** — reports are computed *live* from the
+  `flats`/`sales`/`bookings` tables every time (see
+  `ReportController::teamSummary`), instead of a separately-maintained
+  count. This is the structural fix for the "RR total 25 vs 24" mismatch
+  bug described in the roadmap — the numbers literally cannot drift apart
+  because there is only one source of truth.
 - **Employee privacy / row-level security (Phase 11)** — enforced
   *server-side*, not just in the UI:
   - `Sale::scopeVisibleTo()` / `Booking::scopeVisibleTo()` /
@@ -134,7 +134,9 @@ run the scheduler continuously in dev: `php artisan schedule:work`.
     `LicenseService::status()` needs to change to an HTTP call — see the
     docblock in that file for the exact shape. Nothing else in the app
     needs to move.
-- **Floor & Stock Summary report** — `GET /api/reports/floor-stock-summary`.
+- **Team Performance Summary report** — `GET /api/reports/team-summary`
+  (Total Apt/sft/Revenue/Booking/Cancelled Apt per team, owner's spec;
+  replaced the earlier Zone-based Floor & Stock Summary report).
 - **Document Management (Phase 14)** — `documents` table, polymorphic
   across Project/Customer/Booking/Sale/Payment (`Document::DOCUMENTABLE_TYPES`).
   Files land on the private `local` disk (`storage/app/private` — never

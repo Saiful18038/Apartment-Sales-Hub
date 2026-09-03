@@ -43,7 +43,6 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::post('/sales', [SaleController::class, 'store']);
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::post('/payments', [PaymentController::class, 'store']);
-    Route::get('/reports/floor-stock-summary', [ReportController::class, 'floorAndStockSummary']);
     Route::get('/reports/team-summary', [ReportController::class, 'teamSummary']);
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
