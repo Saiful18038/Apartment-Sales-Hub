@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Paperclip, ClipboardList, FileSpreadsheet } from "lucide-react";
+import { Plus, Paperclip, ClipboardList, FileSpreadsheet, Building2 } from "lucide-react";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
 import { fmtBDT, fmtDate } from "@/lib/format";
-import { Btn, Field, inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, EmptyState, Th, Td } from "@/components/ui";
+import { inputCls, Modal, PageHeader, ErrorBanner, LoadingBlock, EmptyState, Th, Td } from "@/components/ui";
 import DocumentsPanel from "@/components/DocumentsPanel";
 
 const METHODS = ["Bank Transfer", "Cheque", "Cash", "Mobile Banking"];
@@ -49,6 +49,7 @@ function downloadSchedule(sale, schedulePayments) {
 }
 
 export default function PaymentsPage() {
+  const { data: projects } = useApi("/projects");
   const { data: sales, refetch: refetchSales } = useApi("/sales");
   const { data: payments, loading, error, refetch } = useApi("/payments");
   const [docsPayment, setDocsPayment] = useState(null);
@@ -64,38 +65,45 @@ export default function PaymentsPage() {
     return Number(s.sale_price) - paid;
   };
 
-  const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ sale_id: "", amount: "", date: new Date().toISOString().slice(0, 10), method: "Bank Transfer" });
-  const [saveError, setSaveError] = useState("");
+  // A new installment is now typed in directly at the bottom of a sale's own
+  // Payment Schedule ledger (see the add-row below the table) instead of a
+  // separate global "Record Payment" form — the owner's request to drop that
+  // button in favor of an inline, per-sale entry row.
+  const [addRow, setAddRow] = useState({ amount: "", date: new Date().toISOString().slice(0, 10), method: "Bank Transfer" });
+  const [addError, setAddError] = useState("");
 
-  const openNew = () => {
-    setForm({ sale_id: confirmedSales[0]?.id || "", amount: "", date: new Date().toISOString().slice(0, 10), method: "Bank Transfer" });
-    setSaveError("");
-    setModal(true);
+  const openSchedule = (sale) => {
+    setAddRow({ amount: "", date: new Date().toISOString().slice(0, 10), method: "Bank Transfer" });
+    setAddError("");
+    setScheduleSale(sale);
   };
 
-  const save = async () => {
-    const amt = parseFloat(form.amount) || 0;
-    if (!form.sale_id || amt <= 0) return;
-    if (amt > dueFor(Number(form.sale_id))) {
-      setSaveError("Payment exceeds due amount.");
+  const addPayment = async (sale) => {
+    const amt = parseFloat(addRow.amount) || 0;
+    if (amt <= 0) return;
+    if (amt > dueFor(sale.id)) {
+      setAddError("Payment exceeds due amount.");
       return;
     }
     try {
-      await api.post("/payments", { sale_id: Number(form.sale_id), amount: amt, date: form.date, method: form.method });
-      setModal(false);
+      await api.post("/payments", { sale_id: sale.id, amount: amt, date: addRow.date, method: addRow.method });
+      setAddRow({ amount: "", date: new Date().toISOString().slice(0, 10), method: "Bank Transfer" });
+      setAddError("");
       refetch();
       refetchSales();
     } catch (e) {
-      setSaveError(e.message || "Payment failed.");
+      setAddError(e.message || "Payment failed.");
     }
   };
 
   return (
     <div className="space-y-4">
       <PageHeader title="Payments">
-        <span className="text-xs text-slate-400 mr-1">{confirmedSales.length} confirmed sale{confirmedSales.length === 1 ? "" : "s"}</span>
-        <Btn onClick={openNew} disabled={confirmedSales.length === 0}><Plus size={15} /> Record Payment</Btn>
+        <div className="flex items-center gap-1.5 border border-slate-300 rounded-lg px-3 py-1.5">
+          <Building2 size={14} className="text-slate-400" />
+          <span className="text-xs text-slate-500">Total Project</span>
+          <span className="text-sm font-bold text-slate-800">{(projects || []).length}</span>
+        </div>
       </PageHeader>
 
       <ErrorBanner message={error} />
@@ -115,7 +123,7 @@ export default function PaymentsPage() {
                   <Td>{clientId(s.customer_id)}</Td>
                   <Td>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => setScheduleSale(s)} className="flex items-center gap-1.5 text-xs font-medium text-[#1F3864] hover:underline">
+                      <button onClick={() => openSchedule(s)} className="flex items-center gap-1.5 text-xs font-medium text-[#1F3864] hover:underline">
                         <ClipboardList size={14} /> Payment Schedule
                       </button>
                       <button
@@ -133,30 +141,6 @@ export default function PaymentsPage() {
           </table>
           {confirmedSales.length === 0 && <EmptyState text="No confirmed sales to pay against" />}
         </div>
-      )}
-
-      {modal && (
-        <Modal title="Record Payment" onClose={() => setModal(false)}>
-          <ErrorBanner message={saveError} />
-          <Field label="Sale">
-            <select className={inputCls} value={form.sale_id} onChange={(e) => setForm({ ...form, sale_id: e.target.value })}>
-              {confirmedSales.map((s) => (
-                <option key={s.id} value={s.id}>{s.flat?.flat_no} — Due {fmtBDT(dueFor(s.id))}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Amount"><input type="number" className={inputCls} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></Field>
-          <Field label="Date"><input type="date" className={inputCls} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
-          <Field label="Method">
-            <select className={inputCls} value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
-              {METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
-          </Field>
-          <div className="flex justify-end gap-2 mt-2">
-            <Btn variant="outline" onClick={() => setModal(false)}>Cancel</Btn>
-            <Btn onClick={save}>Save</Btn>
-          </div>
-        </Modal>
       )}
 
       {scheduleSale && (() => {
@@ -182,6 +166,7 @@ export default function PaymentsPage() {
               </button>
             </div>
 
+            <ErrorBanner message={addError} />
             <div className="border border-slate-200 rounded-lg overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
@@ -206,9 +191,36 @@ export default function PaymentsPage() {
                       </tr>
                     );
                   })}
+                  {/* Type a new installment directly into the sheet — the
+                      owner's "Record Payment" button now lives here, scoped
+                      to this one sale, instead of a separate global modal. */}
+                  {scheduleSale.sale_price - running > 0 && (
+                    <tr className="bg-slate-50/60">
+                      <Td>
+                        <input type="date" className={`${inputCls} !py-1 text-xs`} value={addRow.date} onChange={(e) => setAddRow({ ...addRow, date: e.target.value })} />
+                      </Td>
+                      <Td>
+                        <select className={`${inputCls} !py-1 text-xs`} value={addRow.method} onChange={(e) => setAddRow({ ...addRow, method: e.target.value })}>
+                          {METHODS.map((m) => <option key={m}>{m}</option>)}
+                        </select>
+                      </Td>
+                      <Td>
+                        <input
+                          type="number" placeholder="Type amount…" className={`${inputCls} !py-1 text-xs w-28`}
+                          value={addRow.amount} onChange={(e) => setAddRow({ ...addRow, amount: e.target.value })}
+                        />
+                      </Td>
+                      <td colSpan={3} className="px-3 py-2 text-xs text-slate-400">Due {fmtBDT(scheduleSale.sale_price - running)}</td>
+                      <Td>
+                        <button onClick={() => addPayment(scheduleSale)} className="p-1.5 rounded-lg bg-[#1F3864] text-white hover:brightness-110" title="Add this payment">
+                          <Plus size={13} />
+                        </button>
+                      </Td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
-              {rows.length === 0 && <EmptyState text="No payments recorded yet" />}
+              {rows.length === 0 && <div className="text-center text-xs text-slate-400 py-2 border-t border-slate-100">No payments recorded yet — type the first one above</div>}
             </div>
           </Modal>
         );
