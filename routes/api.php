@@ -88,6 +88,12 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
         Route::post('/sales/{sale}/approve', [SaleController::class, 'approve']);
         Route::post('/sales/{sale}/reject', [SaleController::class, 'reject']);
 
+        // Correcting/removing an already-recorded payment (not just adding a
+        // new one) is owner/admin-only — same sensitivity tier as editing a
+        // Sale itself.
+        Route::put('/payments/{payment}', [PaymentController::class, 'update']);
+        Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
+
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{user}', [UserController::class, 'update']);
