@@ -37,6 +37,9 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Paired with the 'Login' entry so the Activity Log can compute how
+        // long a session lasted (see frontend/app/(app)/activity/page.js).
+        ActivityLog::record($request->user(), 'Logout', null);
         $request->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Logged out']);
     }
