@@ -44,6 +44,7 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::post('/payments', [PaymentController::class, 'store']);
     Route::get('/reports/floor-stock-summary', [ReportController::class, 'floorAndStockSummary']);
+    Route::get('/reports/team-summary', [ReportController::class, 'teamSummary']);
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
     // ---- Team hierarchy / Task management. Visibility and edit rights are
