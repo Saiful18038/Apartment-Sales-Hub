@@ -15,7 +15,7 @@ class PaymentController extends Controller
 
     public function index(Request $request)
     {
-        $query = Payment::with('sale.flat');
+        $query = Payment::with(['sale.flat.project', 'sale.customer', 'recordedBy']);
         if ($request->user()->isEmployee()) {
             $query->whereHas('sale', fn ($q) => $q->where('employee_id', $request->user()->id));
         }
