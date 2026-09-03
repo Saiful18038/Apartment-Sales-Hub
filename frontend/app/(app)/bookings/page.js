@@ -86,6 +86,9 @@ export default function BookingsPage() {
   const [payAmount, setPayAmount] = useState("");
   const [payError, setPayError] = useState("");
   const [completeMsg, setCompleteMsg] = useState("");
+  const [convertBooking, setConvertBooking] = useState(null);
+  const [convertPricePerSft, setConvertPricePerSft] = useState("");
+  const [convertError, setConvertError] = useState("");
 
   const openNew = () => {
     setForm({ flat_id: availableFlats[0]?.id || "", customer_id: customers?.[0]?.id || "", sale_type: "SOLD_CR", amount: "", date: new Date().toISOString().slice(0, 10) });
@@ -114,13 +117,27 @@ export default function BookingsPage() {
     }
   };
 
-  const convert = async (id) => {
-    if (!confirm("Convert this booking to a sale?")) return;
+  // Bug fix: converting a booking used to always price the resulting Sale
+  // at the flat's full listing total — a booking never captured a
+  // negotiated per-sft price the way a direct Sale does, so a discount the
+  // owner actually gave silently disappeared from "Total Sold Amount"
+  // everywhere. This now asks for the Sold Price/sft at conversion time,
+  // pre-filled with the listing price so leaving it unchanged behaves
+  // exactly as before.
+  const openConvert = (b) => {
+    setConvertBooking(b);
+    setConvertPricePerSft(b.flat?.price_per_sft != null ? String(b.flat.price_per_sft) : "");
+    setConvertError("");
+  };
+
+  const submitConvert = async () => {
     try {
-      await api.post(`/bookings/${id}/convert-to-sale`);
+      const soldPricePerSft = convertPricePerSft === "" ? null : parseFloat(convertPricePerSft);
+      await api.post(`/bookings/${convertBooking.id}/convert-to-sale`, { sold_price_per_sft: soldPricePerSft });
+      setConvertBooking(null);
       refetch();
     } catch (e) {
-      alert(e.message || "Conversion failed.");
+      setConvertError(e.message || "Conversion failed.");
     }
   };
 
@@ -192,7 +209,7 @@ export default function BookingsPage() {
                       <RowMenu
                         onView={() => setDetailBooking(b)}
                         onAddPayment={b.status === "active" && canAct ? () => openPay(b) : null}
-                        onConvert={b.status === "active" && canAct ? () => convert(b.id) : null}
+                        onConvert={b.status === "active" && canAct ? () => openConvert(b) : null}
                         onCancel={b.status === "active" && isOwner ? () => cancelBooking(b.id) : null}
                         onDocuments={() => setDocsBooking(b)}
                       />
@@ -303,6 +320,33 @@ export default function BookingsPage() {
           </div>
         </Modal>
       )}
+
+      {convertBooking && (() => {
+        const flat = convertBooking.flat;
+        const pricePerSft = convertPricePerSft === "" ? null : parseFloat(convertPricePerSft);
+        const totalSoldAmount = flat ? calcFlatPrice(flat, pricePerSft ?? flat.price_per_sft).total : 0;
+        return (
+          <Modal title={`Convert to Sale — ${flat?.flat_no}`} onClose={() => setConvertBooking(null)}>
+            <ErrorBanner message={convertError} />
+            <div className="space-y-2 text-sm mb-3">
+              <div className="flex justify-between"><span className="text-slate-500">Customer</span><span>{convertBooking.customer?.name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Listing Price / sft</span><span>{fmtBDT(flat?.price_per_sft)}</span></div>
+            </div>
+            <Field label="Sold Price / sft">
+              <input type="number" className={inputCls} value={convertPricePerSft} onChange={(e) => setConvertPricePerSft(e.target.value)} />
+            </Field>
+            <div className="text-xs text-slate-400 mb-3">Leave as the listing price if no discount was negotiated.</div>
+            <div className="flex justify-between text-sm font-semibold border-t border-slate-100 pt-2 mb-3">
+              <span className="text-slate-600">Total Sold Amount</span>
+              <span>{fmtBDT(totalSoldAmount)}</span>
+            </div>
+            <div className="flex justify-end gap-2 mt-2">
+              <Btn variant="outline" onClick={() => setConvertBooking(null)}>Cancel</Btn>
+              <Btn onClick={submitConvert}>Convert to Sale</Btn>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {completeMsg && (
         <Modal title="Payment Complete" onClose={() => setCompleteMsg("")}>

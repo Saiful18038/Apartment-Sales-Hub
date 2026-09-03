@@ -123,22 +123,40 @@ class BookingController extends Controller
         return response()->json($booking);
     }
 
-    /** Roadmap Phase 9 — Booking → Sale conversion. */
+    /**
+     * Roadmap Phase 9 — Booking → Sale conversion.
+     *
+     * Bug fix: this used to always price the resulting Sale at the flat's
+     * full listing total (Flat::calcSubTotal() with no override) — a
+     * booking never captures a negotiated per-sft price the way a direct
+     * Sale does (see SaleController::store), so every booking-originated
+     * sale silently ignored any discount the owner actually gave the
+     * customer, inflating "Total Sold Amount" everywhere that reads
+     * Sale::sale_price. sold_price_per_sft is now accepted here too, at
+     * the point of conversion, and drives sale_price exactly like a
+     * direct Sale does — the owner's exact requirement.
+     */
     public function convertToSale(Request $request, Booking $booking)
     {
         if ($request->user()->isEmployee() && $booking->employee_id !== $request->user()->id) {
             return response()->json(['message' => 'Forbidden — not your booking.'], 403);
         }
 
-        $sale = DB::transaction(function () use ($booking, $request) {
+        $data = $request->validate([
+            'sold_price_per_sft' => 'nullable|numeric|min:0',
+        ]);
+
+        $sale = DB::transaction(function () use ($booking, $request, $data) {
             $isEmployee = $request->user()->isEmployee();
             $paidSoFar = $booking->paid_amount;
+            $soldPricePerSft = $data['sold_price_per_sft'] ?? null;
 
             $sale = Sale::create([
                 'flat_id' => $booking->flat_id,
                 'customer_id' => $booking->customer_id,
                 'employee_id' => $booking->employee_id,
-                'sale_price' => $booking->flat->calcSubTotal(),
+                'sale_price' => $booking->flat->calcSubTotal($soldPricePerSft ? (float) $soldPricePerSft : null),
+                'sold_price_per_sft' => $soldPricePerSft,
                 'sale_type' => $booking->sale_type,
                 'date' => now()->toDateString(),
                 'status' => $isEmployee ? 'pending' : 'confirmed',
