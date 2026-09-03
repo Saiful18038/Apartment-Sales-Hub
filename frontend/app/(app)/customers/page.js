@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Paperclip, MoreVertical, Eye } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Pencil, Paperclip, MoreVertical, Eye, Search, X } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -74,6 +74,36 @@ export default function CustomersPage() {
 
   const flatsInForm = allFlats.filter((f) => String(f.project_id) === String(form.interested_project_id));
 
+  // Dropdown filter bar — Search / Project / Team Leader / Status, same
+  // pattern as the Projects and Flats pages' filter bar.
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState("");
+  const [filterLeaderId, setFilterLeaderId] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const leaders = useMemo(() => {
+    const map = new Map();
+    for (const c of customers || []) {
+      const leader = c.assigned_employee?.team?.leader;
+      if (leader) map.set(leader.id, leader.name);
+    }
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [customers]);
+
+  const filteredCustomers = (customers || []).filter((c) => {
+    if (filterProjectId && String(c.interested_project_id) !== filterProjectId) return false;
+    if (filterLeaderId && String(c.assigned_employee?.team?.leader?.id) !== filterLeaderId) return false;
+    if (filterStatus && c.status !== filterStatus) return false;
+    if (filterSearch) {
+      const haystack = `${c.name} ${clientId(c.id)} ${c.interested_flat?.flat_no || ""}`.toLowerCase();
+      if (!haystack.includes(filterSearch.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  const filtersActive = filterSearch || filterProjectId || filterLeaderId || filterStatus;
+  const clearFilters = () => { setFilterSearch(""); setFilterProjectId(""); setFilterLeaderId(""); setFilterStatus(""); };
+
   const openNew = () => {
     setForm({ ...emptyForm, interested_project_id: projects?.[0]?.id || "", assigned_employee_id: user.role === "employee" ? user.id : employees[0]?.id || "" });
     setSaveError("");
@@ -116,6 +146,51 @@ export default function CustomersPage() {
       </PageHeader>
 
       <ErrorBanner message={error} />
+
+      <div className="shadow-premium bg-white rounded-xl p-3.5 flex flex-wrap items-end gap-3">
+        <label className="block w-full sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Search</span>
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              className={`${inputCls} pl-8 w-full sm:w-[200px]`}
+              placeholder="Name, client id, flat…"
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+            />
+          </div>
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Project</span>
+          <select className={`${inputCls} w-full sm:w-[160px]`} value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)}>
+            <option value="">All Projects</option>
+            {(projects || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Team Leader</span>
+          <select className={`${inputCls} w-full sm:w-[160px]`} value={filterLeaderId} onChange={(e) => setFilterLeaderId(e.target.value)}>
+            <option value="">All Team Leaders</option>
+            {leaders.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Status</span>
+          <select className={`${inputCls} w-full sm:w-[150px]`} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="">All Status</option>
+            {CUSTOMER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        {filtersActive && (
+          <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 pb-2.5">
+            <X size={13} /> Clear filters
+          </button>
+        )}
+        <span className="text-xs text-slate-400 ml-auto pb-2.5">
+          {filteredCustomers.length} of {(customers || []).length} customer{(customers || []).length === 1 ? "" : "s"}
+        </span>
+      </div>
+
       {loading ? (
         <LoadingBlock />
       ) : (
@@ -127,7 +202,7 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {customers.map((c) => (
+              {filteredCustomers.map((c) => (
                 <tr key={c.id} className="hover:bg-slate-50">
                   <Td className="font-medium text-slate-800">{c.name}</Td>
                   <Td>{clientId(c.id)}</Td>
@@ -146,7 +221,9 @@ export default function CustomersPage() {
               ))}
             </tbody>
           </table>
-          {customers.length === 0 && <EmptyState text="No customers yet" />}
+          {filteredCustomers.length === 0 && (
+            <EmptyState text={filtersActive ? "No customers match these filters" : "No customers yet"} />
+          )}
         </div>
       )}
 
