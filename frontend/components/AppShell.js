@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, MapPin, Building2, Home, Users, ClipboardList, Handshake,
   Wallet, ScrollText, LogOut, UserCog, AlertTriangle, ShieldAlert, Building, BarChart3, Menu, X,
-  Users2, CheckSquare,
+  Users2, CheckSquare, Bot,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { LICENSE_META } from "@/lib/status";
@@ -22,6 +22,7 @@ const NAV = [
   { href: "/sales", label: "Sales", icon: Handshake },
   { href: "/payments", label: "Payments", icon: Wallet },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/assistant", label: "AI Assistant", icon: Bot },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/activity", label: "Activity Log", icon: ScrollText },
   { href: "/teams", label: "Teams", icon: Users2, ownerAdminOnly: true },

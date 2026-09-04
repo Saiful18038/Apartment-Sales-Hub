@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    // In-App AI Assistant (owner's request) — answers questions about live
+    // flat/sale/booking/customer data. See App\Services\AiAssistantService.
+    // Without an API key the assistant endpoint returns a friendly
+    // "not configured" reply instead of failing.
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+    ],
+
 ];

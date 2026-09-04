@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ActivityLogController;
+use App\Http\Controllers\Api\AssistantController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\CustomerController;
@@ -45,6 +46,11 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::post('/payments', [PaymentController::class, 'store']);
     Route::get('/reports/team-summary', [ReportController::class, 'teamSummary']);
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+
+    // ---- In-App AI Assistant (owner's request) — any role, answers scoped
+    // to what that user can already see (see App\Services\AiAssistantService).
+    Route::get('/assistant/status', [AssistantController::class, 'status']);
+    Route::post('/assistant/chat', [AssistantController::class, 'chat']);
 
     // ---- Team hierarchy / Task management. Visibility and edit rights are
     // scoped per-request inside the controllers (owner/admin: everything;
