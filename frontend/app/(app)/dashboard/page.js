@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { fmtBDT, fmtDateTime, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER } from "@/lib/status";
 import { StatCard, EmptyState, ErrorBanner, LoadingBlock } from "@/components/ui";
+import TeamRevenueBookingPies from "@/components/TeamPieCharts";
 
 export default function DashboardPage() {
   const [state, setState] = useState({ loading: true, error: "" });
@@ -136,6 +137,8 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      <TeamRevenueBookingPies />
 
       <div className="shadow-premium bg-white rounded-2xl p-5">
         <h3 className="text-sm font-bold text-slate-800 mb-4">Recent Activity</h3>
