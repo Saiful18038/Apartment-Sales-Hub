@@ -378,7 +378,13 @@ export default function FlatsPage() {
         // API withheld it because it belongs to another employee. The
         // modal must not leak anything beyond that either.
         const isSold = ["SOLD_CR", "SOLD_OS_SS"].includes(detail.status_code);
-        const privacyHidden = isSold && !detail.sale;
+        const noSaleData = isSold && !detail.sale;
+        // Legacy/orphaned Sold flats (no Sale or Booking row at all) aren't
+        // a privacy case — canView() would have found something if this
+        // viewer were actually being denied one. Owner/Admin especially
+        // need to reach the status-fix dropdown below, not the same
+        // "hidden from you" wording that never applied to them.
+        const privacyHidden = noSaleData && !detail.sale_orphaned;
 
         if (privacyHidden) {
           return (
@@ -419,7 +425,16 @@ export default function FlatsPage() {
               <div className="flex justify-between"><span className="text-slate-500">Reserves Fund</span><span>{fmtBDT(calcFlatPrice(detail).reserve)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Sub-Total</span><span className="font-semibold">{fmtBDT(detail.sub_total ?? calcFlatPrice(detail).total)}</span></div>
               <hr className="my-2 border-slate-100" />
-              {isSold ? (
+              {isSold && detail.sale_orphaned && (
+                <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-1">
+                  <Lock size={14} className="mt-0.5 shrink-0" />
+                  <span>
+                    This flat is marked Sold, but no Sale or Booking record is linked to it — likely legacy data from
+                    before that was tracked.{canEdit ? " Correct its status below if this was a data-entry error." : ""}
+                  </span>
+                </div>
+              )}
+              {isSold && detail.sale ? (
                 <>
                   {detail.sale.is_booking && (
                     <div className="mb-1 text-xs px-2 py-1 rounded-lg bg-orange-50 text-orange-700 inline-block">
@@ -456,7 +471,7 @@ export default function FlatsPage() {
                   )}
                 </>
               ) : (
-                <div className="text-xs text-slate-400 italic">No sale recorded.</div>
+                !isSold && <div className="text-xs text-slate-400 italic">No sale recorded.</div>
               )}
               {canEdit && (
                 <div className="pt-3 flex flex-wrap gap-2">

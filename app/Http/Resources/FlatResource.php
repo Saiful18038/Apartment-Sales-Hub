@@ -105,6 +105,15 @@ class FlatResource extends JsonResource
                     'team_leader' => $leader?->name,
                     'team_member' => $booking->employee->name,
                 ] + self::bookingFigures($booking);
+            } elseif (!$sale && !$booking) {
+                // Legacy data: the flat's status_code says Sold but no Sale
+                // or Booking row backs it (from before changeStatus() below
+                // blocked setting status straight to Sold). Not a privacy
+                // case — surface that distinction so Owner/Admin aren't
+                // told the detail is merely hidden from them when there's
+                // actually nothing on record to show anyone.
+                $data['sale'] = null;
+                $data['sale_orphaned'] = true;
             } else {
                 $data['sale'] = null; // deliberately withheld, not just hidden client-side
             }
