@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Plus, Paperclip, MoreVertical, Eye, Wallet, XCircle, ArrowRightCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Paperclip, MoreVertical, Eye, Wallet, XCircle, ArrowRightCircle, Search, X } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -73,6 +73,7 @@ export default function BookingsPage() {
   const { data: bookings, loading, error, refetch } = useApi("/bookings");
   const { data: flatsRes } = useApi("/flats");
   const { data: customers } = useApi("/customers");
+  const { data: projects } = useApi("/projects");
 
   const allFlats = flatsRes?.data || [];
   const availableFlats = allFlats.filter((f) => f.status_code === "AVAILABLE");
@@ -169,6 +170,33 @@ export default function BookingsPage() {
   const soldAmountOf = (b) => (b.flat ? calcFlatPrice(b.flat).total : 0);
   const canManage = user.role === "owner" || user.role === "admin";
 
+  // Search/Project/Team Leader filter bar — same pattern as the Customers page.
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState("");
+  const [filterLeaderId, setFilterLeaderId] = useState("");
+
+  const leaders = useMemo(() => {
+    const map = new Map();
+    for (const b of bookings || []) {
+      const leader = b.employee?.team?.leader;
+      if (leader) map.set(leader.id, leader.name);
+    }
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [bookings]);
+
+  const filteredBookings = (bookings || []).filter((b) => {
+    if (filterProjectId && String(b.flat?.project_id) !== filterProjectId) return false;
+    if (filterLeaderId && String(b.employee?.team?.leader?.id) !== filterLeaderId) return false;
+    if (filterSearch) {
+      const haystack = `${b.customer?.name || ""} ${clientId(b.customer_id)} ${b.flat?.flat_no || ""}`.toLowerCase();
+      if (!haystack.includes(filterSearch.toLowerCase())) return false;
+    }
+    return true;
+  });
+
+  const filtersActive = filterSearch || filterProjectId || filterLeaderId;
+  const clearFilters = () => { setFilterSearch(""); setFilterProjectId(""); setFilterLeaderId(""); };
+
   return (
     <div className="space-y-4">
       <PageHeader title="Bookings">
@@ -176,6 +204,41 @@ export default function BookingsPage() {
       </PageHeader>
 
       <ErrorBanner message={error} />
+
+      <div className="shadow-premium bg-white rounded-xl p-3.5 flex flex-wrap items-end gap-3">
+        <label className="block w-full sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Search</span>
+          <div className="relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              className={`${inputCls} pl-8 w-full sm:w-[200px]`}
+              placeholder="Name, client id, flat…"
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+            />
+          </div>
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Project</span>
+          <select className={`${inputCls} w-full sm:w-[160px]`} value={filterProjectId} onChange={(e) => setFilterProjectId(e.target.value)}>
+            <option value="">All Projects</option>
+            {(projects || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
+          <span className="block text-xs font-medium text-slate-500 mb-1">Team Leader</span>
+          <select className={`${inputCls} w-full sm:w-[160px]`} value={filterLeaderId} onChange={(e) => setFilterLeaderId(e.target.value)}>
+            <option value="">All Team Leaders</option>
+            {leaders.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        </label>
+        {filtersActive && (
+          <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 pb-2.5">
+            <X size={13} /> Clear filters
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <LoadingBlock />
       ) : (
@@ -187,7 +250,7 @@ export default function BookingsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {bookings.map((b) => {
+              {filteredBookings.map((b) => {
                 const canAct = canManage || b.employee_id === user.id;
                 const type = STATUS[b.sale_type] || {};
                 return (
@@ -221,7 +284,7 @@ export default function BookingsPage() {
               })}
             </tbody>
           </table>
-          {bookings.length === 0 && <EmptyState text="No bookings yet" />}
+          {filteredBookings.length === 0 && <EmptyState text={filtersActive ? "No bookings match these filters" : "No bookings yet"} />}
         </div>
       )}
 
