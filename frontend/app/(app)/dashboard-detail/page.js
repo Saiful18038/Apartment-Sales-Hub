@@ -14,11 +14,11 @@ function DashboardDetailContent() {
   const detailKey = searchParams.get("key");
   const data = useDashboardData();
 
-  // Owner's request: the Total Flats and Available For Sale tabs get the
-  // same Search + Location filter bar as /flats.
+  // Owner's request: the Total Flats, Available For Sale, and Total Sold
+  // Apartment tabs get the same Search + Location filter bar as /flats.
   const [filterSearch, setFilterSearch] = useState("");
   const [filterZoneId, setFilterZoneId] = useState("");
-  const showFlatFilters = detailKey === "flats" || detailKey === "available";
+  const showFlatFilters = ["flats", "available", "sold"].includes(detailKey);
 
   if (data.loading) return <LoadingBlock />;
   if (data.error) return <ErrorBanner message={data.error} />;
@@ -46,6 +46,8 @@ function DashboardDetailContent() {
     bodyData = { ...data, flats: applyFlatFilters(data.flats) };
   } else if (detailKey === "available") {
     bodyData = { ...data, availableFlats: applyFlatFilters(data.availableFlats) };
+  } else if (detailKey === "sold") {
+    bodyData = { ...data, soldFlats: applyFlatFilters(data.soldFlats) };
   }
 
   return (
