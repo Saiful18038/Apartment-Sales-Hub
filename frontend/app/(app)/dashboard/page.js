@@ -1,125 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   MapPin, Building2, Home, ClipboardList, Wallet, BarChart3, Coins, CheckCircle2, XCircle,
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
-import { api } from "@/lib/api";
-import { fmtBDT, fmtDateTime, calcFlatPrice } from "@/lib/format";
-import { STATUS, STATUS_ORDER } from "@/lib/status";
+import { fmtBDT, fmtDateTime } from "@/lib/format";
 import { StatCard, EmptyState, ErrorBanner, LoadingBlock } from "@/components/ui";
 import TeamRevenueBookingPies from "@/components/TeamPieCharts";
-import DashboardDetailModal from "@/components/DashboardDetailModal";
+import { useDashboardData } from "@/lib/useDashboardData";
+
+// Owner's request: each stat card opens its details in a new browser tab
+// (not an in-page modal) — a plain new-tab link to the shared
+// dashboard-detail page, keyed by which card was clicked.
+const openDetail = (key) => window.open(`/dashboard-detail/?key=${key}`, "_blank");
 
 export default function DashboardPage() {
-  const [state, setState] = useState({ loading: true, error: "" });
-  const [detail, setDetail] = useState(null);
-  const [zones, setZones] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [flats, setFlats] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [activity, setActivity] = useState([]);
+  const d = useDashboardData();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [z, p, f, s, pay, book, act] = await Promise.all([
-          api.get("/zones"),
-          api.get("/projects"),
-          api.get("/flats"),
-          api.get("/sales"),
-          api.get("/payments"),
-          api.get("/bookings"),
-          api.get("/activity-logs"),
-        ]);
-        setZones(z);
-        setProjects(p);
-        setFlats(f.data || []);
-        setSales(s);
-        setPayments(pay);
-        setBookings(book);
-        setActivity(act);
-        setState({ loading: false, error: "" });
-      } catch (e) {
-        setState({ loading: false, error: e.message || "Failed to load dashboard." });
-      }
-    })();
-  }, []);
+  if (d.loading) return <LoadingBlock />;
+  if (d.error) return <ErrorBanner message={d.error} />;
 
-  if (state.loading) return <LoadingBlock />;
-  if (state.error) return <ErrorBanner message={state.error} />;
-
-  const byStatus = STATUS_ORDER.map((code) => ({
-    code,
-    label: STATUS[code].label,
-    count: flats.filter((f) => f.status_code === code).length,
-    fill: STATUS[code].border,
-  }));
-
-  const confirmedSales = sales.filter((s) => s.status === "confirmed");
-  const totalPaid = payments.reduce((a, p) => a + Number(p.amount), 0);
-  const totalSaleValue = confirmedSales.reduce((a, s) => a + Number(s.sale_price), 0);
-  const totalDue = totalSaleValue - totalPaid;
-  const pendingSales = sales.filter((s) => s.status === "pending").length;
-
-  // A flat's status_code goes to SOLD_CR/SOLD_OS_SS the instant booking
-  // money is taken (BookingController::store) — before any Sale exists —
-  // per the owner's request: booking money already commits the unit, so the
-  // dashboard should read it as sold immediately, not only once the Booking
-  // is converted into a confirmed Sale. That means the flats list ALREADY
-  // carries every actively-booked unit under a SOLD_* status_code, so
-  // counting it here too would double it — soldApartmentCount is just the
-  // flat count, full stop.
-  //
-  // "Total Sold Amount" is the full committed value of every such unit
-  // (confirmed sales' actual sale_price, which already reflects any
-  // sold-price/sft discount, plus the full listing price of units still in
-  // an active booking) — distinct from "Total Booking Money", which is only
-  // the cash actually collected so far on those still-active bookings (an
-  // active booking's target Booking Money can be paid in installments; see
-  // Booking::paid_amount).
-  const activeBookings = bookings.filter((b) => b.status === "active");
-  const soldApartmentCount = flats.filter((f) => ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code)).length;
-  const activeBookingsFullValue = activeBookings.reduce((a, b) => a + (b.flat ? calcFlatPrice(b.flat).total : 0), 0);
-  const totalBookingMoney = activeBookings.reduce((a, b) => a + Number(b.paid_amount || 0), 0);
-  const totalSoldAmount = totalSaleValue + activeBookingsFullValue;
-  const availableFlats = flats.filter((f) => f.status_code === "AVAILABLE");
-  const availableCount = availableFlats.length;
-  const soldFlats = flats.filter((f) => ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code));
-  const cancelledBookings = bookings.filter((b) => b.status === "cancelled");
-  const cancelledApartmentCount = cancelledBookings.length;
-
-  // Total Due detail: per-sale outstanding balance, only for sales that
-  // actually still owe something — the same figures Total Due sums, broken
-  // out per confirmed sale instead of as one aggregate.
-  const paidBySale = payments.reduce((acc, p) => {
-    const id = p.sale_id ?? p.sale?.id;
-    acc[id] = (acc[id] || 0) + Number(p.amount);
-    return acc;
-  }, {});
-  const dueRows = confirmedSales
-    .map((s) => ({ ...s, due: Number(s.sale_price) - (paidBySale[s.id] || 0) }))
-    .filter((s) => s.due > 0)
-    .sort((a, b) => b.due - a.due);
-
-  const detailData = { zones, projects, flats, availableFlats, soldFlats, confirmedSales, activeBookings, dueRows, cancelledBookings };
+  const {
+    zones, projects, flats, activity, byStatus, confirmedSales, totalSaleValue, totalDue, activeBookings,
+    soldApartmentCount, totalBookingMoney, totalSoldAmount, availableCount, cancelledApartmentCount,
+  } = d;
 
   return (
     <div className="space-y-5">
       <h2 className="text-lg font-semibold text-slate-800">Dashboard</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} onClick={() => setDetail("zones")} />
-        <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} onClick={() => setDetail("projects")} />
-        <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} onClick={() => setDetail("flats")} />
-        <StatCard icon={ClipboardList} label="Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} onClick={() => setDetail("available")} />
-        <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} onClick={() => setDetail("sold")} />
-        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" onClick={() => setDetail("soldAmount")} />
-        <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} onClick={() => setDetail("bookingMoney")} />
-        <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} onClick={() => setDetail("due")} />
-        <StatCard icon={XCircle} label="Number of Cancelled Apartment" value={cancelledApartmentCount} from="#64748b" to="#334155" caption="Cancelled bookings" onClick={() => setDetail("cancelled")} />
+        <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} onClick={() => openDetail("zones")} />
+        <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} onClick={() => openDetail("projects")} />
+        <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} onClick={() => openDetail("flats")} />
+        <StatCard icon={ClipboardList} label="Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} onClick={() => openDetail("available")} />
+        <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} onClick={() => openDetail("sold")} />
+        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" onClick={() => openDetail("soldAmount")} />
+        <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} onClick={() => openDetail("bookingMoney")} />
+        <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} onClick={() => openDetail("due")} />
+        <StatCard icon={XCircle} label="Number of Cancelled Apartment" value={cancelledApartmentCount} from="#64748b" to="#334155" caption="Cancelled bookings" onClick={() => openDetail("cancelled")} />
       </div>
 
       <div className="shadow-premium bg-white rounded-2xl p-5">
@@ -149,10 +67,10 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-3 border-t border-slate-100">
-          {byStatus.map((d) => (
-            <div key={d.code} className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.fill }} />
-              {d.label} <span className="text-slate-400">({d.count})</span>
+          {byStatus.map((s) => (
+            <div key={s.code} className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.fill }} />
+              {s.label} <span className="text-slate-400">({s.count})</span>
             </div>
           ))}
         </div>
@@ -180,8 +98,6 @@ export default function DashboardPage() {
           {activity.length === 0 && <EmptyState text="No activity yet" />}
         </div>
       </div>
-
-      <DashboardDetailModal detailKey={detail} onClose={() => setDetail(null)} data={detailData} />
     </div>
   );
 }
