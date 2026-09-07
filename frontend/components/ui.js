@@ -68,7 +68,7 @@ export function StatCard({ icon: Icon, label, value, caption, from, to }) {
       <div className="pointer-events-none absolute -right-10 bottom-[-3rem] w-32 h-32 rounded-full bg-white/10" />
 
       <div className="relative flex items-start justify-between gap-2">
-        <div className="text-xs font-semibold uppercase text-white/85 leading-snug">{label}</div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-white/85 leading-snug">{label}</div>
         <div className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-white">
           <Icon size={21} />
         </div>

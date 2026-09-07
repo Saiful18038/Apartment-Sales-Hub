@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  MapPin, Building2, Home, ClipboardList, Wallet, BarChart3, Coins, CheckCircle2,
+  MapPin, Building2, Home, ClipboardList, Wallet, BarChart3, Coins, CheckCircle2, XCircle,
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
 import { api } from "@/lib/api";
@@ -85,6 +85,7 @@ export default function DashboardPage() {
   const totalBookingMoney = activeBookings.reduce((a, b) => a + Number(b.paid_amount || 0), 0);
   const totalSoldAmount = totalSaleValue + activeBookingsFullValue;
   const availableCount = flats.filter((f) => f.status_code === "AVAILABLE").length;
+  const cancelledApartmentCount = bookings.filter((b) => b.status === "cancelled").length;
 
   return (
     <div className="space-y-5">
@@ -98,6 +99,7 @@ export default function DashboardPage() {
         <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" />
         <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} />
         <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} />
+        <StatCard icon={XCircle} label="Number of Cancelled Apartment" value={cancelledApartmentCount} from="#64748b" to="#334155" caption="Cancelled bookings" />
       </div>
 
       <div className="shadow-premium bg-white rounded-2xl p-5">
