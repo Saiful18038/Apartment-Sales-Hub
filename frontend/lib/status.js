@@ -29,7 +29,7 @@
  * unchanged, only this displayed label.
  */
 export const STATUS = {
-  AVAILABLE: { label: "Available", fill: "#ECFDF5", border: "#059669", text: "#065F46", sellable: true },
+  AVAILABLE: { label: "Available For Sale", fill: "#ECFDF5", border: "#059669", text: "#065F46", sellable: true },
   LAND_OWNER: { label: "Land Owner", fill: "#EEF2FF", border: "#4F46E5", text: "#3730A3", sellable: false },
   SOLD_CR: { label: "Sold (CR)", fill: "#FEF2F2", border: "#DC2626", text: "#991B1B", sellable: false },
   SOLD_OS_SS: { label: "Sold (OS/SS)", fill: "#F0FDFA", border: "#0D9488", text: "#115E59", sellable: false },
