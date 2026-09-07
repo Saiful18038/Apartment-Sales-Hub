@@ -39,7 +39,7 @@ function TeamDetailContent() {
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <Th>Member</Th><Th>Designation</Th><Th>Total Apt</Th><Th>Total sft</Th>
-                <Th>Total Revenue</Th><Th>Total Booking</Th><Th>Total Cancelled Apt</Th>
+                <Th>Total Revenue</Th><Th>Total Booking</Th><Th>Booking Money %</Th><Th>Total Cancelled Apt</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -54,6 +54,7 @@ function TeamDetailContent() {
                   <Td>{fmtNum(m.total_sft)}</Td>
                   <Td>{fmtBDT(m.total_revenue)}</Td>
                   <Td>{m.total_booking}</Td>
+                  <Td>{m.booking_money_percent}%</Td>
                   <Td className={m.total_cancelled_apt > 0 ? "text-red-600" : ""}>{m.total_cancelled_apt}</Td>
                 </tr>
               ))}
@@ -63,10 +64,11 @@ function TeamDetailContent() {
                 <Td>{fmtNum(team.total_sft)}</Td>
                 <Td>{fmtBDT(team.total_revenue)}</Td>
                 <Td>{team.total_booking}</Td>
+                <Td>{team.booking_money_percent}%</Td>
                 <Td>{team.total_cancelled_apt}</Td>
               </tr>
               {(team.members || []).length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-2 text-sm text-slate-400 italic">No members in this team yet</td></tr>
+                <tr><td colSpan={8} className="px-3 py-2 text-sm text-slate-400 italic">No members in this team yet</td></tr>
               )}
             </tbody>
           </table>

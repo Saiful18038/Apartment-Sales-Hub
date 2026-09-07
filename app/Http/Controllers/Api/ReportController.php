@@ -69,14 +69,20 @@ class ReportController extends Controller
             ->with('flat')
             ->get();
 
-        $totalBooking = Booking::whereIn('employee_id', $employeeIds)->count();
-        $cancelledApt = Booking::whereIn('employee_id', $employeeIds)->where('status', 'cancelled')->count();
+        $bookings = Booking::whereIn('employee_id', $employeeIds)->get();
+        $bookingTarget = (float) $bookings->sum('amount');
+        $bookingPaid = (float) $bookings->sum('paid_amount');
+        $cancelledApt = $bookings->where('status', 'cancelled')->count();
 
         return [
             'total_apt' => $confirmedSales->count(),
             'total_sft' => (float) $confirmedSales->sum(fn ($s) => (float) ($s->flat->size_sft ?? 0)),
             'total_revenue' => (float) $confirmedSales->sum('sale_price'),
-            'total_booking' => $totalBooking,
+            'total_booking' => $bookings->count(),
+            // "Booking Money %" — of every booking this employee/team has
+            // ever taken (any status), how much of the committed Booking
+            // Money target has actually been collected so far.
+            'booking_money_percent' => $bookingTarget > 0 ? round($bookingPaid / $bookingTarget * 100, 1) : 0.0,
             'total_cancelled_apt' => $cancelledApt,
         ];
     }
