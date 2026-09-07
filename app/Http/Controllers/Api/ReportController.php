@@ -41,6 +41,7 @@ class ReportController extends Controller
             })->values();
 
             return array_merge([
+                'id' => $team->id,
                 'team' => $team->name,
                 'leader' => $team->leader?->name,
                 'leader_id' => $team->leader_id,
