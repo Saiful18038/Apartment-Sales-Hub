@@ -14,11 +14,12 @@ function DashboardDetailContent() {
   const detailKey = searchParams.get("key");
   const data = useDashboardData();
 
-  // Owner's request: the Total Flats, Available For Sale, and Total Sold
-  // Apartment tabs get the same Search + Location filter bar as /flats.
+  // Owner's request: the Total Flats, Available For Sale, Total Sold
+  // Apartment, and Total Sold Amount tabs get the same Search + Location
+  // filter bar as /flats.
   const [filterSearch, setFilterSearch] = useState("");
   const [filterZoneId, setFilterZoneId] = useState("");
-  const showFlatFilters = ["flats", "available", "sold"].includes(detailKey);
+  const showFlatFilters = ["flats", "available", "sold", "soldAmount"].includes(detailKey);
 
   if (data.loading) return <LoadingBlock />;
   if (data.error) return <ErrorBanner message={data.error} />;
@@ -41,6 +42,19 @@ function DashboardDetailContent() {
     return true;
   });
 
+  // Total Sold Amount's two tables (Confirmed Sales, Active Bookings) are
+  // Sale/Booking rows, not Flat rows — same Search + Location filter, just
+  // reading the flat/customer through the nested relation instead.
+  const applySaleBookingFilters = (rows) => rows.filter((r) => {
+    if (filterZoneId && projectZoneId(r.flat?.project_id) !== filterZoneId) return false;
+    if (filterSearch) {
+      const project = data.projects.find((p) => p.id === r.flat?.project_id);
+      const haystack = `${r.flat?.flat_no || ""} ${project?.name || ""} ${r.customer?.name || ""}`.toLowerCase();
+      if (!haystack.includes(filterSearch.toLowerCase())) return false;
+    }
+    return true;
+  });
+
   let bodyData = data;
   if (detailKey === "flats") {
     bodyData = { ...data, flats: applyFlatFilters(data.flats) };
@@ -48,6 +62,8 @@ function DashboardDetailContent() {
     bodyData = { ...data, availableFlats: applyFlatFilters(data.availableFlats) };
   } else if (detailKey === "sold") {
     bodyData = { ...data, soldFlats: applyFlatFilters(data.soldFlats) };
+  } else if (detailKey === "soldAmount") {
+    bodyData = { ...data, confirmedSales: applySaleBookingFilters(data.confirmedSales), activeBookings: applySaleBookingFilters(data.activeBookings) };
   }
 
   return (
