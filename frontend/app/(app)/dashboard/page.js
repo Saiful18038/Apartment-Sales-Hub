@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  MapPin, Building2, Home, ClipboardList, Handshake, Wallet, AlertTriangle, BarChart3, Coins, CheckCircle2,
+  MapPin, Building2, Home, ClipboardList, Wallet, BarChart3, Coins, CheckCircle2,
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
 import { api } from "@/lib/api";
@@ -93,10 +93,8 @@ export default function DashboardPage() {
         <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} />
         <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} />
         <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} />
-        <StatCard icon={ClipboardList} label="Available" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} />
+        <StatCard icon={ClipboardList} label="Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} />
         <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} />
-        <StatCard icon={Handshake} label="Confirmed Sales" value={confirmedSales.length} from="#e0ac2b" to="#B7860B" caption={`${pendingSales} pending approval`} />
-        <StatCard icon={AlertTriangle} label="Pending Approval" value={pendingSales} from="#f97316" to="#c2410c" caption="Needs owner/admin review" />
         <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" />
         <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} />
         <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} />
