@@ -14,10 +14,11 @@ function DashboardDetailContent() {
   const detailKey = searchParams.get("key");
   const data = useDashboardData();
 
-  // Owner's request: the Total Flats tab gets its own Search + Location
-  // filter bar, same shape as the one on /flats.
+  // Owner's request: the Total Flats and Available For Sale tabs get the
+  // same Search + Location filter bar as /flats.
   const [filterSearch, setFilterSearch] = useState("");
   const [filterZoneId, setFilterZoneId] = useState("");
+  const showFlatFilters = detailKey === "flats" || detailKey === "available";
 
   if (data.loading) return <LoadingBlock />;
   if (data.error) return <ErrorBanner message={data.error} />;
@@ -30,18 +31,21 @@ function DashboardDetailContent() {
     return p ? String(p.zone_id ?? p.zone?.id ?? "") : "";
   };
 
+  const applyFlatFilters = (rows) => rows.filter((f) => {
+    if (filterZoneId && projectZoneId(f.project_id) !== filterZoneId) return false;
+    if (filterSearch) {
+      const project = data.projects.find((p) => p.id === f.project_id);
+      const haystack = `${f.flat_no} ${project?.name || ""}`.toLowerCase();
+      if (!haystack.includes(filterSearch.toLowerCase())) return false;
+    }
+    return true;
+  });
+
   let bodyData = data;
   if (detailKey === "flats") {
-    const filteredFlats = data.flats.filter((f) => {
-      if (filterZoneId && projectZoneId(f.project_id) !== filterZoneId) return false;
-      if (filterSearch) {
-        const project = data.projects.find((p) => p.id === f.project_id);
-        const haystack = `${f.flat_no} ${project?.name || ""}`.toLowerCase();
-        if (!haystack.includes(filterSearch.toLowerCase())) return false;
-      }
-      return true;
-    });
-    bodyData = { ...data, flats: filteredFlats };
+    bodyData = { ...data, flats: applyFlatFilters(data.flats) };
+  } else if (detailKey === "available") {
+    bodyData = { ...data, availableFlats: applyFlatFilters(data.availableFlats) };
   }
 
   return (
@@ -68,7 +72,7 @@ function DashboardDetailContent() {
         </div>
       </div>
 
-      {detailKey === "flats" && (
+      {showFlatFilters && (
         <div className="shadow-premium bg-white rounded-xl p-3.5 flex flex-wrap items-end gap-3">
           <label className="block w-full sm:w-auto">
             <span className="block text-xs font-medium text-slate-500 mb-1">Search</span>
