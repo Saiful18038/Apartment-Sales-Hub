@@ -14,12 +14,12 @@ function DashboardDetailContent() {
   const detailKey = searchParams.get("key");
   const data = useDashboardData();
 
-  // Owner's request: the Total Flats, Available For Sale, Total Sold
-  // Apartment, and Total Sold Amount tabs get the same Search + Location
-  // filter bar as /flats.
+  // Owner's request: every tab that lists flats/sales/bookings gets the
+  // same Search + Location filter bar as /flats (Zones/Projects are
+  // summary tables, not lists of units, so they're left out).
   const [filterSearch, setFilterSearch] = useState("");
   const [filterZoneId, setFilterZoneId] = useState("");
-  const showFlatFilters = ["flats", "available", "sold", "soldAmount"].includes(detailKey);
+  const showFlatFilters = ["flats", "available", "sold", "soldAmount", "bookingMoney", "due", "cancelled"].includes(detailKey);
 
   if (data.loading) return <LoadingBlock />;
   if (data.error) return <ErrorBanner message={data.error} />;
@@ -64,6 +64,12 @@ function DashboardDetailContent() {
     bodyData = { ...data, soldFlats: applyFlatFilters(data.soldFlats) };
   } else if (detailKey === "soldAmount") {
     bodyData = { ...data, confirmedSales: applySaleBookingFilters(data.confirmedSales), activeBookings: applySaleBookingFilters(data.activeBookings) };
+  } else if (detailKey === "bookingMoney") {
+    bodyData = { ...data, activeBookings: applySaleBookingFilters(data.activeBookings) };
+  } else if (detailKey === "due") {
+    bodyData = { ...data, dueRows: applySaleBookingFilters(data.dueRows) };
+  } else if (detailKey === "cancelled") {
+    bodyData = { ...data, cancelledBookings: applySaleBookingFilters(data.cancelledBookings) };
   }
 
   return (
