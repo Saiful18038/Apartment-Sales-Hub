@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import { ErrorBanner, LoadingBlock, inputCls } from "@/components/ui";
 import { useDashboardData } from "@/lib/useDashboardData";
 import DashboardDetailBody, { DETAIL_TITLES } from "@/components/DashboardDetailBody";
@@ -14,11 +14,35 @@ function DashboardDetailContent() {
   const detailKey = searchParams.get("key");
   const data = useDashboardData();
 
+  // Owner's request: the Total Flats tab gets its own Search + Location
+  // filter bar, same shape as the one on /flats.
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterZoneId, setFilterZoneId] = useState("");
+
   if (data.loading) return <LoadingBlock />;
   if (data.error) return <ErrorBanner message={data.error} />;
 
   const title = DETAIL_TITLES[detailKey];
   if (!title) return <ErrorBanner message="Unknown dashboard detail." />;
+
+  const projectZoneId = (projectId) => {
+    const p = data.projects.find((pr) => pr.id === projectId);
+    return p ? String(p.zone_id ?? p.zone?.id ?? "") : "";
+  };
+
+  let bodyData = data;
+  if (detailKey === "flats") {
+    const filteredFlats = data.flats.filter((f) => {
+      if (filterZoneId && projectZoneId(f.project_id) !== filterZoneId) return false;
+      if (filterSearch) {
+        const project = data.projects.find((p) => p.id === f.project_id);
+        const haystack = `${f.flat_no} ${project?.name || ""}`.toLowerCase();
+        if (!haystack.includes(filterSearch.toLowerCase())) return false;
+      }
+      return true;
+    });
+    bodyData = { ...data, flats: filteredFlats };
+  }
 
   return (
     <div className="space-y-4">
@@ -43,8 +67,33 @@ function DashboardDetailContent() {
           </select>
         </div>
       </div>
+
+      {detailKey === "flats" && (
+        <div className="shadow-premium bg-white rounded-xl p-3.5 flex flex-wrap items-end gap-3">
+          <label className="block w-full sm:w-auto">
+            <span className="block text-xs font-medium text-slate-500 mb-1">Search</span>
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                className={`${inputCls} pl-8 w-full sm:w-[200px]`}
+                placeholder="Name, code, address…"
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.target.value)}
+              />
+            </div>
+          </label>
+          <label className="block w-[calc(50%-0.375rem)] sm:w-auto">
+            <span className="block text-xs font-medium text-slate-500 mb-1">Location</span>
+            <select className={`${inputCls} w-full sm:w-[160px]`} value={filterZoneId} onChange={(e) => setFilterZoneId(e.target.value)}>
+              <option value="">All Locations</option>
+              {(data.zones || []).map((z) => <option key={z.id} value={String(z.id)}>{z.name}</option>)}
+            </select>
+          </label>
+        </div>
+      )}
+
       <div className="shadow-premium bg-white rounded-2xl p-5">
-        <DashboardDetailBody detailKey={detailKey} data={data} />
+        <DashboardDetailBody detailKey={detailKey} data={bodyData} />
       </div>
     </div>
   );
