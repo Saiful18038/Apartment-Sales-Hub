@@ -183,7 +183,7 @@ export default function BookingsPage() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <Th>Flat</Th><Th>Customer</Th><Th>Employee</Th><Th>Sale Type</Th><Th>Booking Money</Th><Th>Status</Th><Th></Th>
+                <Th>Flat</Th><Th>Project</Th><Th>Customer</Th><Th>Team Member</Th><Th>Team Leader</Th><Th>Sale Type</Th><Th>Booking Money</Th><Th>Status</Th><Th></Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -193,8 +193,10 @@ export default function BookingsPage() {
                 return (
                   <tr key={b.id} className="hover:bg-slate-50">
                     <Td className="font-medium text-slate-800">{b.flat?.flat_no}</Td>
+                    <Td>{b.flat?.project?.name || "—"}</Td>
                     <Td>{b.customer?.name} <span className="text-slate-400 text-xs">({clientId(b.customer_id)})</span></Td>
                     <Td>{b.employee?.name}</Td>
+                    <Td>{b.employee?.team?.leader?.name || "—"}</Td>
                     <Td>
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: type.fill, color: type.text }}>
                         {type.label || b.sale_type}

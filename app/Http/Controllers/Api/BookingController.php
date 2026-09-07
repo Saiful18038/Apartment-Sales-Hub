@@ -19,7 +19,7 @@ class BookingController extends Controller
     public function index(Request $request)
     {
         return Booking::visibleTo($request->user())
-            ->with(['flat', 'customer', 'employee', 'payments'])
+            ->with(['flat.project', 'customer', 'employee.team.leader', 'payments'])
             ->latest()
             ->get();
     }
