@@ -58,10 +58,13 @@ export function StatusPill({ code }) {
  * label+icon, never asked to carry meaning alone) rather than a value that
  * has to match a status/series color used elsewhere.
  */
-export function StatCard({ icon: Icon, label, value, caption, from, to }) {
+export function StatCard({ icon: Icon, label, value, caption, from, to, onClick }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl p-6 min-h-[148px] shadow-premium transition-transform hover:-translate-y-0.5"
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`group relative overflow-hidden rounded-2xl p-6 min-h-[148px] shadow-premium transition-transform hover:-translate-y-0.5 text-left w-full ${onClick ? "cursor-pointer hover:ring-2 hover:ring-white/50" : ""}`}
       style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
     >
       <div className="pointer-events-none absolute -right-6 -top-10 w-36 h-36 rounded-full bg-white/10" />
@@ -75,7 +78,7 @@ export function StatCard({ icon: Icon, label, value, caption, from, to }) {
       </div>
       <div className="relative text-[28px] font-bold text-white tracking-tight leading-tight mt-3 break-words">{value}</div>
       {caption && <div className="relative text-xs text-white/75 truncate mt-2">{caption}</div>}
-    </div>
+    </Tag>
   );
 }
 

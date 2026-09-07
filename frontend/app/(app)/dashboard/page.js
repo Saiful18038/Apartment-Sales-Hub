@@ -10,9 +10,11 @@ import { fmtBDT, fmtDateTime, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER } from "@/lib/status";
 import { StatCard, EmptyState, ErrorBanner, LoadingBlock } from "@/components/ui";
 import TeamRevenueBookingPies from "@/components/TeamPieCharts";
+import DashboardDetailModal from "@/components/DashboardDetailModal";
 
 export default function DashboardPage() {
   const [state, setState] = useState({ loading: true, error: "" });
+  const [detail, setDetail] = useState(null);
   const [zones, setZones] = useState([]);
   const [projects, setProjects] = useState([]);
   const [flats, setFlats] = useState([]);
@@ -84,22 +86,40 @@ export default function DashboardPage() {
   const activeBookingsFullValue = activeBookings.reduce((a, b) => a + (b.flat ? calcFlatPrice(b.flat).total : 0), 0);
   const totalBookingMoney = activeBookings.reduce((a, b) => a + Number(b.paid_amount || 0), 0);
   const totalSoldAmount = totalSaleValue + activeBookingsFullValue;
-  const availableCount = flats.filter((f) => f.status_code === "AVAILABLE").length;
-  const cancelledApartmentCount = bookings.filter((b) => b.status === "cancelled").length;
+  const availableFlats = flats.filter((f) => f.status_code === "AVAILABLE");
+  const availableCount = availableFlats.length;
+  const soldFlats = flats.filter((f) => ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code));
+  const cancelledBookings = bookings.filter((b) => b.status === "cancelled");
+  const cancelledApartmentCount = cancelledBookings.length;
+
+  // Total Due detail: per-sale outstanding balance, only for sales that
+  // actually still owe something — the same figures Total Due sums, broken
+  // out per confirmed sale instead of as one aggregate.
+  const paidBySale = payments.reduce((acc, p) => {
+    const id = p.sale_id ?? p.sale?.id;
+    acc[id] = (acc[id] || 0) + Number(p.amount);
+    return acc;
+  }, {});
+  const dueRows = confirmedSales
+    .map((s) => ({ ...s, due: Number(s.sale_price) - (paidBySale[s.id] || 0) }))
+    .filter((s) => s.due > 0)
+    .sort((a, b) => b.due - a.due);
+
+  const detailData = { zones, projects, flats, availableFlats, soldFlats, confirmedSales, activeBookings, dueRows, cancelledBookings };
 
   return (
     <div className="space-y-5">
       <h2 className="text-lg font-semibold text-slate-800">Dashboard</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} />
-        <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} />
-        <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} />
-        <StatCard icon={ClipboardList} label="Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} />
-        <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} />
-        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" />
-        <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} />
-        <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} />
-        <StatCard icon={XCircle} label="Number of Cancelled Apartment" value={cancelledApartmentCount} from="#64748b" to="#334155" caption="Cancelled bookings" />
+        <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} onClick={() => setDetail("zones")} />
+        <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} onClick={() => setDetail("projects")} />
+        <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} onClick={() => setDetail("flats")} />
+        <StatCard icon={ClipboardList} label="Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} onClick={() => setDetail("available")} />
+        <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} onClick={() => setDetail("sold")} />
+        <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" onClick={() => setDetail("soldAmount")} />
+        <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} onClick={() => setDetail("bookingMoney")} />
+        <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} onClick={() => setDetail("due")} />
+        <StatCard icon={XCircle} label="Number of Cancelled Apartment" value={cancelledApartmentCount} from="#64748b" to="#334155" caption="Cancelled bookings" onClick={() => setDetail("cancelled")} />
       </div>
 
       <div className="shadow-premium bg-white rounded-2xl p-5">
@@ -160,6 +180,8 @@ export default function DashboardPage() {
           {activity.length === 0 && <EmptyState text="No activity yet" />}
         </div>
       </div>
+
+      <DashboardDetailModal detailKey={detail} onClose={() => setDetail(null)} data={detailData} />
     </div>
   );
 }
