@@ -4,7 +4,7 @@ import { ShieldCheck, Users } from "lucide-react";
 import { useApi } from "@/lib/useApi";
 import { fmtBDT } from "@/lib/format";
 import { ErrorBanner, LoadingBlock, Th, Td } from "@/components/ui";
-import TeamRevenueBookingPies from "@/components/TeamPieCharts";
+import TeamRevenueBookingPies, { PIE_COLORS } from "@/components/TeamPieCharts";
 
 /** Reuses fmtBDT's lakh-style comma grouping for a plain (non-currency) count, e.g. sft. */
 const fmtNum = (n) => fmtBDT(n).replace("৳", "");
@@ -40,20 +40,32 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {teamRows.map((r) => (
-                <tr key={r.team}>
-                  <Td className="font-medium text-slate-800">
-                    <button onClick={() => window.open(`/reports/team/?id=${r.id}`, "_blank")} className="text-[#1F3864] hover:underline font-medium">{r.team}</button>
-                    {" "}<span className="text-slate-400 font-normal">({r.leader || "—"})</span>
-                  </Td>
-                  <Td>{r.total_apt}</Td>
-                  <Td>{fmtNum(r.total_sft)}</Td>
-                  <Td>{fmtBDT(r.total_revenue)}</Td>
-                  <Td>{r.total_booking}</Td>
-                  <Td className={r.total_cancelled_apt > 0 ? "text-red-600" : ""}>{r.total_cancelled_apt}</Td>
-                  <Td className="text-slate-400">{r.remarks || "—"}</Td>
-                </tr>
-              ))}
+              {teamRows.map((r, i) => {
+                // Owner's request: each team gets its own color so the row
+                // is visually traceable down to its slice in the pie
+                // charts below — same PIE_COLORS palette, same index order.
+                const color = PIE_COLORS[i % PIE_COLORS.length];
+                return (
+                  <tr key={r.team}>
+                    <Td className="font-medium text-slate-800">
+                      <button
+                        onClick={() => window.open(`/reports/team/?id=${r.id}`, "_blank")}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full font-semibold hover:opacity-80 transition-opacity"
+                        style={{ backgroundColor: `${color}1a`, color, border: `1px solid ${color}55` }}
+                      >
+                        {r.team}
+                      </button>
+                      {" "}<span className="text-slate-400 font-normal">({r.leader || "—"})</span>
+                    </Td>
+                    <Td>{r.total_apt}</Td>
+                    <Td>{fmtNum(r.total_sft)}</Td>
+                    <Td>{fmtBDT(r.total_revenue)}</Td>
+                    <Td>{r.total_booking}</Td>
+                    <Td className={r.total_cancelled_apt > 0 ? "text-red-600" : ""}>{r.total_cancelled_apt}</Td>
+                    <Td className="text-slate-400">{r.remarks || "—"}</Td>
+                  </tr>
+                );
+              })}
               {teamGrand && (
                 <tr className="bg-slate-50 font-semibold">
                   <Td>Grand Total</Td>
