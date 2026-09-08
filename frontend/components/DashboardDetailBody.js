@@ -173,50 +173,53 @@ export default function DashboardDetailBody({ detailKey, data }) {
 
   if (detailKey === "bookingMoney") {
     return (
-      <Table headers={["Flat", "Customer", "Target", "Paid", "Due"]}>
+      <Table headers={["Project", "Flat", "Client Id", "Target", "Paid", "Due"]}>
         {activeBookings.map((b) => (
           <tr key={b.id}>
+            <Td>{projectName(b.flat?.project_id)}</Td>
             <Td className="font-medium text-slate-800">{b.flat?.flat_no || "—"}</Td>
-            <Td>{b.customer?.name || "—"}</Td>
+            <Td>{clientId(b.customer_id)}</Td>
             <Td>{fmtBDT(b.amount)}</Td>
             <Td>{fmtBDT(b.paid_amount)}</Td>
             <Td className="text-red-600">{fmtBDT(Number(b.amount) - Number(b.paid_amount || 0))}</Td>
           </tr>
         ))}
-        {activeBookings.length === 0 && <EmptyRow colSpan={5} />}
+        {activeBookings.length === 0 && <EmptyRow colSpan={6} />}
       </Table>
     );
   }
 
   if (detailKey === "due") {
     return (
-      <Table headers={["Flat", "Customer", "Sale Amount", "Paid", "Due"]}>
+      <Table headers={["Project", "Flat", "Client Id", "Sale Amount", "Paid", "Due"]}>
         {dueRows.map((s) => (
           <tr key={s.id}>
+            <Td>{projectName(s.flat?.project_id)}</Td>
             <Td className="font-medium text-slate-800">{s.flat?.flat_no || "—"}</Td>
-            <Td>{s.customer?.name || "—"}</Td>
+            <Td>{clientId(s.customer_id)}</Td>
             <Td>{fmtBDT(s.sale_price)}</Td>
             <Td>{fmtBDT(Number(s.sale_price) - s.due)}</Td>
             <Td className="text-red-600 font-semibold">{fmtBDT(s.due)}</Td>
           </tr>
         ))}
-        {dueRows.length === 0 && <EmptyRow colSpan={5} />}
+        {dueRows.length === 0 && <EmptyRow colSpan={6} />}
       </Table>
     );
   }
 
   if (detailKey === "cancelled") {
     return (
-      <Table headers={["Flat", "Customer", "Employee", "Date"]}>
+      <Table headers={["Project", "Flat", "Client Id", "Employee", "Date"]}>
         {cancelledBookings.map((b) => (
           <tr key={b.id}>
+            <Td>{projectName(b.flat?.project_id)}</Td>
             <Td className="font-medium text-slate-800">{b.flat?.flat_no || "—"}</Td>
-            <Td>{b.customer?.name || "—"}</Td>
+            <Td>{clientId(b.customer_id)}</Td>
             <Td>{b.employee?.name || "—"}</Td>
             <Td>{b.date}</Td>
           </tr>
         ))}
-        {cancelledBookings.length === 0 && <EmptyRow colSpan={4} />}
+        {cancelledBookings.length === 0 && <EmptyRow colSpan={5} />}
       </Table>
     );
   }
