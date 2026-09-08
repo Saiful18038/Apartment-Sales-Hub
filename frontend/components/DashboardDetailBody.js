@@ -48,6 +48,8 @@ function EmptyRow({ colSpan }) {
  */
 /** "CUST-00001" — same formatting used across Sales/Customers/Bookings pages. */
 const clientId = (id) => (id ? "CUST-" + String(id).padStart(5, "0") : "—");
+/** "EMP-00001" — same padded-id shape as clientId, for the employee who made a sale. */
+const empId = (id) => (id ? "EMP-" + String(id).padStart(5, "0") : "—");
 
 export default function DashboardDetailBody({ detailKey, data }) {
   const { projects, flats, availableFlats, soldFlats, confirmedSales, activeBookings, dueRows, cancelledBookings, zones } = data;
@@ -118,14 +120,14 @@ export default function DashboardDetailBody({ detailKey, data }) {
 
   if (detailKey === "sold") {
     return (
-      <Table headers={["Project", "Flat No", "Status", "Sold By", "Customer"]}>
+      <Table headers={["Project", "Flat No", "Status", "Sold By", "Client Id"]}>
         {soldFlats.map((f) => (
           <tr key={f.id}>
             <Td>{projectName(f.project_id)}</Td>
             <Td className="font-medium text-slate-800">{f.flat_no}</Td>
             <Td><StatusPill code={f.status_code} /></Td>
-            <Td>{f.sale?.sold_by || "—"}</Td>
-            <Td>{f.sale?.customer || "—"}</Td>
+            <Td>{f.sale ? `${f.sale.sold_by} (${empId(f.sale.employee_id)})` : "—"}</Td>
+            <Td>{f.sale?.customer_id || "—"}</Td>
           </tr>
         ))}
         {soldFlats.length === 0 && <EmptyRow colSpan={5} />}
