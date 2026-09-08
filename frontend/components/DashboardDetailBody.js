@@ -46,6 +46,9 @@ function EmptyRow({ colSpan }) {
  * sees exactly the same privacy boundary as everywhere else in the app, not
  * a bypass of it.
  */
+/** "CUST-00001" — same formatting used across Sales/Customers/Bookings pages. */
+const clientId = (id) => (id ? "CUST-" + String(id).padStart(5, "0") : "—");
+
 export default function DashboardDetailBody({ detailKey, data }) {
   const { projects, flats, availableFlats, soldFlats, confirmedSales, activeBookings, dueRows, cancelledBookings, zones } = data;
 
@@ -135,29 +138,31 @@ export default function DashboardDetailBody({ detailKey, data }) {
       <div className="space-y-5">
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Confirmed Sales</h4>
-          <Table headers={["Flat", "Customer", "Sold Amount", "Date"]}>
+          <Table headers={["Project", "Flat", "Client Id", "Sold Amount", "Date"]}>
             {confirmedSales.map((s) => (
               <tr key={s.id}>
+                <Td>{projectName(s.flat?.project_id)}</Td>
                 <Td className="font-medium text-slate-800">{s.flat?.flat_no || "—"}</Td>
-                <Td>{s.customer?.name || "—"}</Td>
+                <Td>{clientId(s.customer_id)}</Td>
                 <Td>{fmtBDT(s.sale_price)}</Td>
                 <Td>{s.date}</Td>
               </tr>
             ))}
-            {confirmedSales.length === 0 && <EmptyRow colSpan={4} />}
+            {confirmedSales.length === 0 && <EmptyRow colSpan={5} />}
           </Table>
         </div>
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Active Bookings (full listing value)</h4>
-          <Table headers={["Flat", "Customer", "Value"]}>
+          <Table headers={["Project", "Flat", "Client Id", "Value"]}>
             {activeBookings.map((b) => (
               <tr key={b.id}>
+                <Td>{projectName(b.flat?.project_id)}</Td>
                 <Td className="font-medium text-slate-800">{b.flat?.flat_no || "—"}</Td>
-                <Td>{b.customer?.name || "—"}</Td>
+                <Td>{clientId(b.customer_id)}</Td>
                 <Td>{fmtBDT(b.flat ? calcFlatPrice(b.flat).total : 0)}</Td>
               </tr>
             ))}
-            {activeBookings.length === 0 && <EmptyRow colSpan={3} />}
+            {activeBookings.length === 0 && <EmptyRow colSpan={4} />}
           </Table>
         </div>
       </div>
