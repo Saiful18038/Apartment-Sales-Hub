@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Sale;
 use App\Models\Team;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class ReportController extends Controller
@@ -22,10 +23,20 @@ class ReportController extends Controller
      * TeamController), so a single "employee is one of this team's
      * members" query covers everyone who sold or booked under that team,
      * leader included.
+     *
+     * Privacy: only Owner/Admin see every team. A Team Leader or Employee
+     * only ever sees their own team's row — same "your own team's numbers,
+     * nobody else's" boundary already enforced elsewhere (Sale/Booking
+     * visibleTo(), FlatResource::canView).
      */
-    public function teamSummary()
+    public function teamSummary(Request $request)
     {
-        $teams = Team::with('members')->get();
+        $user = $request->user();
+        $teamsQuery = Team::with('members');
+        if (!$user->canManage()) {
+            $teamsQuery->where('id', $user->team_id);
+        }
+        $teams = $teamsQuery->get();
 
         $rows = $teams->map(function (Team $team) {
             $members = $team->members;
