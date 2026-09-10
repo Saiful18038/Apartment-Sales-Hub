@@ -15,11 +15,19 @@
 /auth.json
 /node_modules
 /storage/*.key
+/storage/license
 /storage/pail
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local-only dev scratch / operator docs — never push to the public repo.
+# image*.png are pasted dev screenshots; LICENSE-KILL-SWITCH.md is the
+# internal operator guide (bypass steps + key fingerprint) and lives with
+# the key backups on the offline drive instead.
+/image*.png
+/LICENSE-KILL-SWITCH.md
 
 # --- Frontend (Next.js source in frontend/) ---
 /frontend/node_modules

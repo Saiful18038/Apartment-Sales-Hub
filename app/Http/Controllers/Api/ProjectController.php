@@ -13,6 +13,7 @@ class ProjectController extends Controller
     {
         return Project::with('zone')->withCount('flats')->get()->map(function ($p) {
             $p->status_counts = $p->statusCounts();
+            $p->units = $p->unitBreakdown();
             return $p;
         });
     }

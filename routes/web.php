@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\LicenseService;
 use Illuminate\Support\Facades\Route;
 
 // The Next.js dashboard is compiled to a static export and copied into
@@ -11,6 +12,13 @@ use Illuminate\Support\Facades\Route;
 // client-side routes — and hands back the pre-rendered HTML for that route,
 // falling back to the app shell so deep links and refreshes work.
 Route::get('/{path?}', function (string $path = '') {
+    // Kill switch: an expired/revoked license replaces the entire UI with a
+    // static lock page, so the SPA never even boots. The /api/* side is
+    // blocked separately by the `license` middleware (routes/api.php).
+    if (app(LicenseService::class)->isBlocked()) {
+        return response()->view('license-locked', [], 503);
+    }
+
     $public = public_path();
 
     if ($path !== '' && ! str_contains($path, '..')) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Check, X, AlertTriangle, Paperclip } from "lucide-react";
+import { Plus, Pencil, Check, X, AlertTriangle, Paperclip, Search } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -123,6 +123,19 @@ export default function SalesPage() {
   const pending = (sales || []).filter((s) => s.status === "pending");
   const confirmed = (sales || []).filter((s) => s.status === "confirmed");
 
+  // Owner's request: a search bar over the confirmed-sales list. Matches
+  // project, flat no, client id (raw or "CUST-00001"), customer name, who
+  // sold it, and the sale-type label.
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const typeLabel = (t) => (t === "SOLD_OS_SS" ? "sold os/ss" : "sold cr");
+  const visibleConfirmed = q
+    ? confirmed.filter((s) => [
+        s.flat?.project?.name, s.flat?.flat_no, String(s.customer_id), clientId(s.customer_id),
+        s.customer?.name, s.employee?.name, typeLabel(s.sale_type),
+      ].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)))
+    : confirmed;
+
   return (
     <div className="space-y-5">
       <PageHeader title="Sales">
@@ -157,6 +170,21 @@ export default function SalesPage() {
             </div>
           )}
 
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5">
+            <label className="block">
+              <span className="block text-xs font-medium text-slate-500 mb-1">Search</span>
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  className={`${inputCls} pl-8 w-full sm:w-[280px]`}
+                  placeholder="Project, flat, client id, sold by…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </label>
+          </div>
+
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -166,7 +194,7 @@ export default function SalesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {confirmed.map((s) => (
+                {visibleConfirmed.map((s) => (
                   <SaleRow
                     key={s.id} sale={s} payments={payments || []} showEmployee={user.role !== "employee"}
                     onDocuments={() => setDocsSale(s)} onEdit={canApprove ? () => openEditSale(s) : null}
@@ -174,7 +202,9 @@ export default function SalesPage() {
                 ))}
               </tbody>
             </table>
-            {confirmed.length === 0 && <EmptyState text="No confirmed sales yet" />}
+            {confirmed.length === 0
+              ? <EmptyState text="No confirmed sales yet" />
+              : visibleConfirmed.length === 0 && <EmptyState text={`No sales match “${search.trim()}”`} />}
           </div>
         </>
       )}

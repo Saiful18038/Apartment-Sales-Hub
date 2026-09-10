@@ -31,7 +31,14 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'date' => 'required|date',
             'method' => 'required|string|max:100',
+            // Free-text values for this sale's user-defined Excel Sheet
+            // columns, keyed by payment_sheet_columns.id.
+            'custom' => 'nullable|array',
+            'custom.*' => 'nullable|string|max:1000',
         ]);
+        if (isset($data['custom'])) {
+            $data['custom'] = array_filter($data['custom'], fn ($v) => $v !== null && $v !== '') ?: null;
+        }
 
         $sale = Sale::findOrFail($data['sale_id']);
         if ($sale->status !== 'confirmed') {
@@ -72,6 +79,27 @@ class PaymentController extends Controller
 
         $payment->update($data);
         ActivityLog::record($request->user(), 'Payment Updated', "{$sale->flat->flat_no} — {$data['amount']} ({$data['method']})");
+        return response()->json($payment->fresh());
+    }
+
+    /**
+     * Set the free-text values for this payment's user-defined Excel Sheet
+     * columns (see PaymentSheetColumn) — the inline cell editing in the
+     * Payments "Excel Sheet" modal. Sent on its own so a note can be
+     * corrected without re-submitting the amount/date/method. Blank cells
+     * are dropped rather than stored, so an emptied column leaves no row.
+     */
+    public function updateCustom(Request $request, Payment $payment)
+    {
+        $this->license->guard();
+
+        $data = $request->validate([
+            'custom' => 'present|array',
+            'custom.*' => 'nullable|string|max:1000',
+        ]);
+
+        $custom = array_filter($data['custom'], fn ($v) => $v !== null && $v !== '');
+        $payment->update(['custom' => $custom ?: null]);
         return response()->json($payment->fresh());
     }
 

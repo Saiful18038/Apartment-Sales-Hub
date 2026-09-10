@@ -4,11 +4,13 @@ use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AssistantController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\ChartImportController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\FlatController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PriceScheduleController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SaleController;
@@ -18,8 +20,9 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ZoneController;
 use Illuminate\Support\Facades\Route;
 
-// Public
-Route::post('/login', [AuthController::class, 'login']);
+// Public — but still license-gated, so an expired license kills login too
+// (the kill switch locks the whole app, not just the authenticated area).
+Route::post('/login', [AuthController::class, 'login'])->middleware('license');
 
 // Authenticated + license-gated (mirrors <LicenseGate> in the React prototype —
 // see App\Http\Middleware\CheckLicense).
@@ -44,6 +47,14 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
     Route::post('/sales', [SaleController::class, 'store']);
     Route::get('/payments', [PaymentController::class, 'index']);
     Route::post('/payments', [PaymentController::class, 'store']);
+
+    // Per-sale "Final Price & Payment Schedule" document (replaces the old
+    // per-sale Excel Sheet). Read + export for any role that can see the
+    // sale; the PUT is owner/admin-only (see the role group below).
+    Route::get('/sales/{sale}/price-schedule', [PriceScheduleController::class, 'show']);
+    Route::get('/sales/{sale}/price-schedule/pdf', [PriceScheduleController::class, 'pdf']);
+    Route::get('/sales/{sale}/price-schedule/excel', [PriceScheduleController::class, 'excel']);
+
     Route::get('/reports/team-summary', [ReportController::class, 'teamSummary']);
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
@@ -87,6 +98,11 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
         Route::post('/flats', [FlatController::class, 'store']);
         Route::put('/flats/{flat}', [FlatController::class, 'update']);
         Route::delete('/flats/{flat}', [FlatController::class, 'destroy']);
+
+        // Bulk upload: the "PRICE & AVAILABILITY CHART" .xlsx (or a reviewed
+        // .csv) → Zones / Projects / Flats. dry_run=1 previews, dry_run=0
+        // writes. See App\Services\ChartParser / ChartImporter.
+        Route::post('/chart/import', [ChartImportController::class, 'store']);
         Route::patch('/flats/{flat}/status', [FlatController::class, 'changeStatus']);
         Route::post('/flats/{flat}/exchange-parking', [FlatController::class, 'exchangeParking']);
 
@@ -99,6 +115,11 @@ Route::middleware(['auth:sanctum', 'license'])->group(function () {
         // Sale itself.
         Route::put('/payments/{payment}', [PaymentController::class, 'update']);
         Route::delete('/payments/{payment}', [PaymentController::class, 'destroy']);
+
+        // Edit the per-sale "Final Price & Payment Schedule" — price rows,
+        // instalments, and marking an instalment paid (which records the
+        // linked Payment). Owner/admin tier, same as correcting a payment.
+        Route::put('/sales/{sale}/price-schedule', [PriceScheduleController::class, 'update']);
 
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);

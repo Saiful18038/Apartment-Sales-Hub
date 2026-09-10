@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Lock, Search, X, ArrowLeftRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Lock, Search, X, ArrowLeftRight, UploadCloud } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/api";
@@ -9,6 +9,8 @@ import { fmtBDT, fmtLac, calcFlatPrice } from "@/lib/format";
 import { STATUS, STATUS_ORDER, PROJECT_STATUSES, statusMeta } from "@/lib/status";
 import { Btn, Field, inputCls, Modal, ErrorBanner, LoadingBlock, EmptyState, StatusPill } from "@/components/ui";
 import PageBackdrop, { PalmFrond } from "@/components/PageBackdrop";
+import ChartImport from "@/components/ChartImport";
+import { projectUnits, unitLabel } from "@/lib/units";
 
 const emptyForm = {
   flat_no: "", floor: "", size_sft: "", price_per_sft: "", parking_charge: 500000, parking_count: 1,
@@ -46,13 +48,74 @@ function InfoBox({ tone = "slate", title, subtitle }) {
   );
 }
 
+/**
+ * One status box on a floor-map card — shared by the single-column layout
+ * and the multi-unit grid below.
+ */
+function FlatBox({ f, onSelectFlat }) {
+  const s = statusMeta(f.status_code);
+  // Roadmap Phase 11 — Employee Privacy, extended for the Team hierarchy
+  // (FlatResource::canViewSale): a Sold flat's customer/price/who-sold-it
+  // is withheld from anyone who isn't Owner/Admin, that flat's Team
+  // Leader, or the employee who made the sale — but the status itself
+  // ("Sold (CR)"/"Sold (OS/SS)") is inventory classification, not
+  // sensitive, so the card still names it instead of a generic
+  // "(Sold Out)" that threw the CR/OS-SS distinction away.
+  const isSold = ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code);
+  const privacyHidden = isSold && !f.sale;
+
+  if (privacyHidden) {
+    return (
+      <button
+        onClick={() => onSelectFlat(f)}
+        className="w-full h-full px-2.5 py-1.5 rounded-[10px] border text-[12px] leading-[1.3] text-center hover:shadow-md transition"
+        style={{ backgroundColor: s.fill, borderColor: s.border, color: s.text }}
+      >
+        <div className="font-bold opacity-70">{s.label}</div>
+      </button>
+    );
+  }
+
+  // Roadmap Phase 5 — a sellable flat (Available / Re-Sale / Ready) shows
+  // price/size inline since that's exactly what a buyer needs to see at a
+  // glance; a flat that's already spoken for (Sold/Land Owner/Booked)
+  // just needs its status.
+  return (
+    <button
+      onClick={() => onSelectFlat(f)}
+      className="w-full h-full px-2.5 py-1.5 rounded-[10px] border text-[12px] leading-[1.3] text-center hover:shadow-md transition"
+      style={{ backgroundColor: s.fill, borderColor: s.border, color: s.text }}
+    >
+      {s.sellable ? (
+        <>
+          <div className="font-bold">{f.flat_no} {f.facing ? `(${f.facing})` : ""} {fmtBDT(f.price_per_sft).replace("৳", "")}</div>
+          <div className="text-[11px] opacity-80 mt-0.5">[{Math.round(f.size_sft)} sft] {s.label}</div>
+        </>
+      ) : (
+        <>
+          <div className="font-bold">{f.flat_no}</div>
+          <div className="text-[11px] opacity-80 mt-0.5">{s.label}</div>
+        </>
+      )}
+    </button>
+  );
+}
+
 /** One project's full floor-map card — one "grid part" in the 4-column layout. */
 function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, onShowInfo }) {
   const sorted = flats.slice().sort((a, b) => b.floor - a.floor);
   const floors = [...new Set(sorted.map((f) => f.floor))].sort((a, b) => b - a);
 
+  // Unit columns — when a project has 2+ apartment lines (e.g. EMBASSY
+  // SQUARE's A-1472 / B-1472 / AB-2972) each line becomes its own column
+  // with shared "Floor N" rows down the left, mirroring the owner's
+  // hand-made availability chart. One-line projects keep the plain
+  // single-column stack. See lib/units.js.
+  const units = projectUnits(sorted);
+  const multi = units.length >= 2;
+
   return (
-    <div className="bg-[#FBF7EC] border border-[#EAE0C4] rounded-[22px] shadow-lg shadow-black/5 p-4 flex flex-col">
+    <div className={`bg-[#FBF7EC] border border-[#EAE0C4] rounded-[22px] shadow-lg shadow-black/5 p-4 flex flex-col ${multi && units.length >= 3 ? "sm:col-span-2" : ""}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-extrabold text-[#122347] tracking-wide truncate">{project.name}</h3>
         {canEdit && (
@@ -63,63 +126,47 @@ function ProjectFloorCard({ project, flats, canEdit, onAddFlat, onSelectFlat, on
       </div>
 
       <div className="space-y-2 flex-1">
-        {floors.map((fl) => (
-          <FloorRow key={fl} label={`Floor ${fl}`}>
-            <div className="flex flex-col gap-1.5">
-              {sorted.filter((f) => f.floor === fl).map((f) => {
-                const s = statusMeta(f.status_code);
-                // Roadmap Phase 11 — Employee Privacy, extended for the Team
-                // hierarchy (FlatResource::canViewSale): a Sold flat's
-                // customer/price/who-sold-it is withheld from anyone who
-                // isn't Owner/Admin, that flat's Team Leader, or the
-                // employee who made the sale — but the status itself
-                // ("Sold (CR)"/"Sold (OS/SS)") is inventory classification,
-                // not sensitive, so the card still names it instead of a
-                // generic "(Sold Out)" that threw the CR/OS-SS distinction away.
-                const isSold = ["SOLD_CR", "SOLD_OS_SS"].includes(f.status_code);
-                const privacyHidden = isSold && !f.sale;
-
-                if (privacyHidden) {
-                  return (
-                    <button
-                      key={f.id}
-                      onClick={() => onSelectFlat(f)}
-                      className="w-full px-2.5 py-1.5 rounded-[10px] border text-[12px] leading-[1.3] text-center hover:shadow-md transition"
-                      style={{ backgroundColor: s.fill, borderColor: s.border, color: s.text }}
-                    >
-                      <div className="font-bold opacity-70">{s.label}</div>
-                    </button>
-                  );
-                }
-
-                // Roadmap Phase 5 — a sellable flat (Available / Re-Sale /
-                // Ready) shows price/size inline since that's exactly what
-                // a buyer needs to see at a glance; a flat that's already
-                // spoken for (Sold/Land Owner/Booked) just needs its status.
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => onSelectFlat(f)}
-                    className="w-full px-2.5 py-1.5 rounded-[10px] border text-[12px] leading-[1.3] text-center hover:shadow-md transition"
-                    style={{ backgroundColor: s.fill, borderColor: s.border, color: s.text }}
-                  >
-                    {s.sellable ? (
-                      <>
-                        <div className="font-bold">{f.flat_no} {f.facing ? `(${f.facing})` : ""} {fmtBDT(f.price_per_sft).replace("৳", "")}</div>
-                        <div className="text-[11px] opacity-80 mt-0.5">[{Math.round(f.size_sft)} sft] {s.label}</div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="font-bold">{f.flat_no}</div>
-                        <div className="text-[11px] opacity-80 mt-0.5">{s.label}</div>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
+        {multi ? (
+          <div className="overflow-x-auto -mx-1 px-1 pb-1">
+            <div className="min-w-max space-y-1.5">
+              <div className="flex items-stretch gap-1.5">
+                <div className="w-[52px] shrink-0" />
+                {units.map((u) => (
+                  <div key={u} className="w-[104px] shrink-0 truncate text-center text-[11px] font-extrabold text-[#122347]" title={u}>
+                    {u}
+                  </div>
+                ))}
+              </div>
+              {floors.map((fl) => (
+                <div key={fl} className="flex items-stretch gap-1.5">
+                  <div className="w-[52px] shrink-0 flex items-center text-xs font-medium text-slate-500">Floor {fl}</div>
+                  {units.map((u) => {
+                    const f = sorted.find((x) => x.floor === fl && unitLabel(x.flat_no) === u);
+                    return (
+                      <div key={u} className="w-[104px] shrink-0">
+                        {f ? (
+                          <FlatBox f={f} onSelectFlat={onSelectFlat} />
+                        ) : (
+                          <div className="w-full h-full min-h-[40px] rounded-[10px] border border-dashed border-slate-200" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          </FloorRow>
-        ))}
+          </div>
+        ) : (
+          floors.map((fl) => (
+            <FloorRow key={fl} label={`Floor ${fl}`}>
+              <div className="flex flex-col gap-1.5">
+                {sorted.filter((f) => f.floor === fl).map((f) => (
+                  <FlatBox key={f.id} f={f} onSelectFlat={onSelectFlat} />
+                ))}
+              </div>
+            </FloorRow>
+          ))
+        )}
         {sorted.length === 0 && <EmptyState text="No flats yet" />}
 
         {/* Hand-over Date / Launch Date / Facing — visible to every role
@@ -182,6 +229,7 @@ export default function FlatsPage() {
   const [exchangeFlat, setExchangeFlat] = useState(null); // flat whose parking number we're exchanging
   const [exchangeWithId, setExchangeWithId] = useState("");
   const [exchangeError, setExchangeError] = useState("");
+  const [importing, setImporting] = useState(false);
 
   // Filtering system — same Location/Status/Type/Search filter bar as /projects,
   // filtering which project cards show in the grid.
@@ -331,7 +379,17 @@ export default function FlatsPage() {
             <X size={13} /> Clear filters
           </button>
         )}
-        <span className="text-xs font-medium text-[#2c3e63]/60 ml-auto pb-2.5">
+        {canEdit && (
+          <button
+            onClick={() => setImporting(true)}
+            className="group ml-auto inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#e0ac2b] to-[#B7860B] px-3.5 py-2 text-xs font-bold text-white shadow-md shadow-[#B7860B]/30 ring-1 ring-white/40 hover:shadow-lg hover:shadow-[#B7860B]/40 hover:brightness-110 active:scale-[0.98] transition-all self-center"
+            title="Bulk-create projects & flats from the availability chart Excel"
+          >
+            <UploadCloud size={15} className="transition-transform group-hover:-translate-y-0.5" />
+            Excel Sheet Data
+          </button>
+        )}
+        <span className={`text-xs font-medium text-[#2c3e63]/60 pb-2.5 self-end ${canEdit ? "" : "ml-auto"}`}>
           {filteredProjects.length} of {(projects || []).length} project{(projects || []).length === 1 ? "" : "s"}
         </span>
       </div>
@@ -419,7 +477,7 @@ export default function FlatsPage() {
                   )}
                 </span>
               </div>
-              <div className="flex justify-between"><span className="text-slate-500">Price / sft</span><span>{fmtBDT(detail.price_per_sft)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">MNP/SFT</span><span>{fmtBDT(detail.price_per_sft)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Parking Cost</span><span>{fmtBDT(calcFlatPrice(detail).parking)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Utility Cost</span><span>{fmtBDT(calcFlatPrice(detail).utility)}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Reserves Fund</span><span>{fmtBDT(calcFlatPrice(detail).reserve)}</span></div>
@@ -446,9 +504,11 @@ export default function FlatsPage() {
                       Awaiting Owner/Admin approval
                     </div>
                   )}
-                  <div className="flex justify-between"><span className="text-slate-500">Price / sft</span><span>{fmtBDT(detail.sale.price_per_sft)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">MNP/SFT</span><span>{fmtBDT(detail.sale.price_per_sft)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Sold Price / sft</span><span>{detail.sale.sold_price_per_sft ? fmtBDT(detail.sale.sold_price_per_sft) : "—"}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Total Sold Amount</span><span className="font-semibold">{fmtBDT(detail.sale.sale_price)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Actual Selling Price</span><span>{fmtBDT(detail.sale.sale_price)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Less Price</span><span>{fmtBDT((detail.sub_total ?? calcFlatPrice(detail).total) - Number(detail.sale.sale_price || 0))}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Customer</span><span>{detail.sale.customer}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Customer Id</span><span>{detail.sale.customer_id}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Client Reference</span><span>{detail.sale.client_reference || "—"}</span></div>
@@ -506,17 +566,25 @@ export default function FlatsPage() {
         // Same project only — parking is physically tied to one building's
         // garage (see FlatController::exchangeParking).
         const candidates = allFlats.filter((f) => f.project_id === exchangeFlat.project_id && f.id !== exchangeFlat.id);
+        // Owner's request: show the parking slot as a plain number here
+        // ("parking 8", not "parking A8") — strip any building-letter
+        // prefix for display only, the stored value is unchanged.
+        const slot = (pn) => {
+          const s = String(pn ?? "").trim();
+          const digits = s.replace(/\D/g, "");
+          return digits || s || "—";
+        };
         return (
           <Modal title={`Exchange Parking — ${exchangeFlat.flat_no}`} onClose={() => setExchangeFlat(null)}>
             <ErrorBanner message={exchangeError} />
             <div className="text-sm text-slate-500 mb-3">
-              Current parking number: <span className="font-semibold text-slate-700">{exchangeFlat.parking_number || "—"}</span>
+              Current parking number: <span className="font-semibold text-slate-700">{slot(exchangeFlat.parking_number)}</span>
             </div>
             <Field label="Exchange with">
               <select className={inputCls} value={exchangeWithId} onChange={(e) => setExchangeWithId(e.target.value)}>
                 <option value="">Select a flat…</option>
                 {candidates.map((f) => (
-                  <option key={f.id} value={f.id}>{f.flat_no} — parking {f.parking_number || "—"}</option>
+                  <option key={f.id} value={f.id}>{f.flat_no} — parking {slot(f.parking_number)}</option>
                 ))}
               </select>
             </Field>
@@ -528,6 +596,10 @@ export default function FlatsPage() {
           </Modal>
         );
       })()}
+
+      {importing && (
+        <ChartImport onClose={() => setImporting(false)} onImported={refetch} />
+      )}
 
       {modal && (
         <Modal title={modal === "new" ? "Add Flat" : "Edit Flat"} onClose={() => setModal(null)} wide>

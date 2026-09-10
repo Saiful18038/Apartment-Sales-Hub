@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api, getToken, setToken, setLicenseStatusHandler, setLicenseBlockedHandler, setUnauthorizedHandler, LicenseBlockedError } from "./api";
+import { clearApiCache } from "./useApi";
 
 const AuthContext = createContext(null);
 
@@ -15,6 +16,7 @@ export function AuthProvider({ children }) {
     setLicenseStatusHandler((status) => setLicenseStatus(status));
     setLicenseBlockedHandler((status, message) => setLicenseBlocked({ status, message }));
     setUnauthorizedHandler(() => {
+      clearApiCache();
       setUser(null);
     });
   }, []);
@@ -42,6 +44,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const res = await api.login(email, password);
+    clearApiCache(); // don't let a previous user's cached data survive a re-login
     setToken(res.token);
     setUser(res.user);
     setLicenseBlocked(null);
@@ -54,6 +57,7 @@ export function AuthProvider({ children }) {
     } catch {
       // ignore — we're clearing local state regardless
     }
+    clearApiCache();
     setToken(null);
     setUser(null);
   }, []);

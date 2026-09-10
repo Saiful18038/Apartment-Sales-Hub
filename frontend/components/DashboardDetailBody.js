@@ -6,12 +6,11 @@ import { fmtBDT, calcFlatPrice } from "@/lib/format";
 export const DETAIL_TITLES = {
   zones: "Zones",
   projects: "Projects",
-  flats: "Total Flats",
-  available: "Available For Sale",
-  sold: "Total Sold Apartment",
+  flats: "All Apartment",
+  available: "Product Available For Sale",
+  sold: "Total sold out",
   soldAmount: "Total Sold Amount",
   bookingMoney: "Total Booking Money",
-  due: "Total Due",
   cancelled: "Number of Cancelled Apartment",
 };
 
@@ -52,7 +51,7 @@ const clientId = (id) => (id ? "CUST-" + String(id).padStart(5, "0") : "—");
 const empId = (id) => (id ? "EMP-" + String(id).padStart(5, "0") : "—");
 
 export default function DashboardDetailBody({ detailKey, data }) {
-  const { projects, flats, availableFlats, soldFlats, confirmedSales, activeBookings, dueRows, cancelledBookings, zones } = data;
+  const { projects, flats, availableFlats, soldFlats, confirmedSales, activeBookings, cancelledBookings, zones } = data;
 
   const projectName = (id) => projects.find((p) => p.id === id)?.name || "—";
 
@@ -120,17 +119,18 @@ export default function DashboardDetailBody({ detailKey, data }) {
 
   if (detailKey === "sold") {
     return (
-      <Table headers={["Project", "Flat No", "Status", "Sold By", "Client Id"]}>
+      <Table headers={["Project", "Flat No", "Status", "Sold By TL", "Sold By TM", "Client Id"]}>
         {soldFlats.map((f) => (
           <tr key={f.id}>
             <Td>{projectName(f.project_id)}</Td>
             <Td className="font-medium text-slate-800">{f.flat_no}</Td>
             <Td><StatusPill code={f.status_code} /></Td>
-            <Td>{f.sale ? `${f.sale.sold_by} (${empId(f.sale.employee_id)})` : "—"}</Td>
+            <Td>{f.sale?.team_leader || "—"}</Td>
+            <Td>{f.sale ? `${f.sale.team_member} (${empId(f.sale.employee_id)})` : "—"}</Td>
             <Td>{f.sale?.customer_id || "—"}</Td>
           </tr>
         ))}
-        {soldFlats.length === 0 && <EmptyRow colSpan={5} />}
+        {soldFlats.length === 0 && <EmptyRow colSpan={6} />}
       </Table>
     );
   }
@@ -173,7 +173,7 @@ export default function DashboardDetailBody({ detailKey, data }) {
 
   if (detailKey === "bookingMoney") {
     return (
-      <Table headers={["Project", "Flat", "Client Id", "Target", "Paid", "Due"]}>
+      <Table headers={["Project", "Flat", "Client Id", "Total Booking Money", "Paid", "Due"]}>
         {activeBookings.map((b) => (
           <tr key={b.id}>
             <Td>{projectName(b.flat?.project_id)}</Td>
@@ -185,24 +185,6 @@ export default function DashboardDetailBody({ detailKey, data }) {
           </tr>
         ))}
         {activeBookings.length === 0 && <EmptyRow colSpan={6} />}
-      </Table>
-    );
-  }
-
-  if (detailKey === "due") {
-    return (
-      <Table headers={["Project", "Flat", "Client Id", "Sale Amount", "Paid", "Due"]}>
-        {dueRows.map((s) => (
-          <tr key={s.id}>
-            <Td>{projectName(s.flat?.project_id)}</Td>
-            <Td className="font-medium text-slate-800">{s.flat?.flat_no || "—"}</Td>
-            <Td>{clientId(s.customer_id)}</Td>
-            <Td>{fmtBDT(s.sale_price)}</Td>
-            <Td>{fmtBDT(Number(s.sale_price) - s.due)}</Td>
-            <Td className="text-red-600 font-semibold">{fmtBDT(s.due)}</Td>
-          </tr>
-        ))}
-        {dueRows.length === 0 && <EmptyRow colSpan={6} />}
       </Table>
     );
   }

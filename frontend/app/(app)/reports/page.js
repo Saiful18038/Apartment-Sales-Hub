@@ -1,18 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { ShieldCheck, Users } from "lucide-react";
 import { useApi } from "@/lib/useApi";
 import { fmtBDT } from "@/lib/format";
 import { ErrorBanner, LoadingBlock, Th, Td } from "@/components/ui";
 import TeamRevenueBookingPies, { PIE_COLORS } from "@/components/TeamPieCharts";
+import ReportPeriodPicker, { periodLabel } from "@/components/ReportPeriodPicker";
 
 /** Reuses fmtBDT's lakh-style comma grouping for a plain (non-currency) count, e.g. sft. */
 const fmtNum = (n) => fmtBDT(n).replace("৳", "");
 
 export default function ReportsPage() {
-  const { data: teamData, loading: teamLoading, error: teamError } = useApi("/reports/team-summary");
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(0); // 0 = whole year
+
+  const { data: teamData, loading: teamLoading, error: teamError } =
+    useApi(`/reports/team-summary?year=${year}&month=${month}`);
   const teamRows = teamData?.teams || [];
   const teamGrand = teamData?.grand_total;
+  const years = teamData?.years || [];
 
   return (
     <div className="space-y-5">
@@ -23,11 +30,16 @@ export default function ReportsPage() {
         out of sync the way they did in the manual spreadsheet (roadmap §2.3).
       </div>
 
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3.5">
+        <ReportPeriodPicker year={year} month={month} years={years} onYear={setYear} onMonth={setMonth} />
+      </div>
+
       <ErrorBanner message={teamError} />
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
         <div className="flex items-center gap-2 px-4 pt-4">
           <Users size={15} className="text-[#1F3864]" />
           <h3 className="text-sm font-bold text-slate-800">Team Performance Summary</h3>
+          <span className="text-xs text-slate-400">· {periodLabel(year, month)}</span>
         </div>
         {teamLoading ? (
           <LoadingBlock />
@@ -49,7 +61,7 @@ export default function ReportsPage() {
                   <tr key={r.team}>
                     <Td className="font-medium text-slate-800">
                       <button
-                        onClick={() => window.open(`/reports/team/?id=${r.id}`, "_blank")}
+                        onClick={() => window.open(`/reports/team/?id=${r.id}&year=${year}&month=${month}`, "_blank")}
                         className="inline-flex items-center px-2.5 py-1 rounded-full font-semibold hover:opacity-80 transition-opacity"
                         style={{ backgroundColor: `${color}1a`, color, border: `1px solid ${color}55` }}
                       >
@@ -85,7 +97,7 @@ export default function ReportsPage() {
         )}
       </div>
 
-      <TeamRevenueBookingPies />
+      <TeamRevenueBookingPies year={year} month={month} />
     </div>
   );
 }

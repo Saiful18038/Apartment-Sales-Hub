@@ -195,6 +195,22 @@ export default function ProjectsPage() {
                       </span>
                     ))}
                   </div>
+                  {/* Unit columns — a project with 2+ apartment lines (see
+                      EMBASSY SQUARE) lists each line's code with its
+                      available/total count. Same split the Flats floor-map
+                      card renders as side-by-side unit columns. */}
+                  {p.units?.length > 1 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {p.units.map((u) => (
+                        <span
+                          key={u.code}
+                          className="text-xs px-3 py-1.5 rounded-full font-semibold bg-[#EFE9DA] text-[#5C4A1E] border border-[#E0D3AE]"
+                        >
+                          Unit {u.code} · {u.available}/{u.total}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

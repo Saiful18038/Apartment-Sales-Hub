@@ -21,7 +21,7 @@ export default function DashboardPage() {
   if (d.error) return <ErrorBanner message={d.error} />;
 
   const {
-    zones, projects, flats, activity, byStatus, confirmedSales, totalSaleValue, totalDue, activeBookings,
+    zones, projects, flats, activity, byStatus, confirmedSales, activeBookings,
     soldApartmentCount, totalBookingMoney, totalSoldAmount, availableCount, cancelledApartmentCount,
   } = d;
 
@@ -31,12 +31,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         <StatCard icon={MapPin} label="Zones" value={zones.length} from="#2c4a7c" to="#16233f" caption={`${projects.length} projects total`} onClick={() => openDetail("zones")} />
         <StatCard icon={Building2} label="Projects" value={projects.length} from="#4f46e5" to="#3730a3" caption={`${flats.length} units total`} onClick={() => openDetail("projects")} />
-        <StatCard icon={Home} label="Total Flats" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} onClick={() => openDetail("flats")} />
-        <StatCard icon={ClipboardList} label="Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} onClick={() => openDetail("available")} />
-        <StatCard icon={CheckCircle2} label="Total Sold Apartment" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} onClick={() => openDetail("sold")} />
+        <StatCard icon={Home} label="All Apartment" value={flats.length} from="#2563eb" to="#1d4ed8" caption={`${availableCount} available`} onClick={() => openDetail("flats")} />
+        <StatCard icon={ClipboardList} label="Product Available For Sale" value={availableCount} from="#0ea5e9" to="#0369a1" caption={flats.length ? `${Math.round((availableCount / flats.length) * 100)}% of inventory` : "—"} onClick={() => openDetail("available")} />
+        <StatCard icon={CheckCircle2} label="Total sold out" value={soldApartmentCount} from="#10b981" to="#047857" caption={`${confirmedSales.length} confirmed + ${activeBookings.length} booked`} onClick={() => openDetail("sold")} />
         <StatCard icon={Wallet} label="Total Sold Amount" value={fmtBDT(totalSoldAmount)} from="#22c55e" to="#15803d" caption="Confirmed sales + booked units" onClick={() => openDetail("soldAmount")} />
         <StatCard icon={Coins} label="Total Booking Money" value={fmtBDT(totalBookingMoney)} from="#f59e0b" to="#b45309" caption={`${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}`} onClick={() => openDetail("bookingMoney")} />
-        <StatCard icon={Wallet} label="Total Due" value={fmtBDT(totalDue)} from="#f43f5e" to="#be123c" caption={`of ${fmtBDT(totalSaleValue)} sold`} onClick={() => openDetail("due")} />
         <StatCard icon={XCircle} label="Number of Cancelled Apartment" value={cancelledApartmentCount} from="#64748b" to="#334155" caption="Cancelled bookings" onClick={() => openDetail("cancelled")} />
       </div>
 

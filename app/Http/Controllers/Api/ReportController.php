@@ -32,23 +32,35 @@ class ReportController extends Controller
     public function teamSummary(Request $request)
     {
         $user = $request->user();
+
+        // Owner's request: the same summary sliced by period — a year
+        // (2026, 2027, …) and, optionally, one month within it. Sale and
+        // Booking rows are filtered on their own `date` column; `month` of
+        // 0 (or absent) means the whole year, and `year` of 0 (or absent)
+        // means all time.
+        $year = (int) $request->query('year');
+        $month = (int) $request->query('month');
+        if ($month < 1 || $month > 12) {
+            $month = 0;
+        }
+
         $teamsQuery = Team::with('members');
         if (!$user->canManage()) {
             $teamsQuery->where('id', $user->team_id);
         }
         $teams = $teamsQuery->get();
 
-        $rows = $teams->map(function (Team $team) {
+        $rows = $teams->map(function (Team $team) use ($year, $month) {
             $members = $team->members;
 
-            $memberRows = $members->map(function ($member) {
+            $memberRows = $members->map(function ($member) use ($year, $month) {
                 return array_merge([
                     'id' => $member->id,
                     'name' => $member->name,
                     'role' => $member->role,
                     'designation' => $member->designation,
                     'employee_code' => $member->employee_code,
-                ], $this->statsFor(collect([$member->id])));
+                ], $this->statsFor(collect([$member->id]), $year, $month));
             })->values();
 
             return array_merge([
@@ -58,7 +70,7 @@ class ReportController extends Controller
                 'leader_id' => $team->leader_id,
                 'members' => $memberRows,
                 'remarks' => null,
-            ], $this->statsFor($members->pluck('id')));
+            ], $this->statsFor($members->pluck('id'), $year, $month));
         });
 
         $grand = [
@@ -69,18 +81,44 @@ class ReportController extends Controller
             'total_cancelled_apt' => $rows->sum('total_cancelled_apt'),
         ];
 
-        return response()->json(['teams' => $rows->values(), 'grand_total' => $grand]);
+        // Every year that has a Sale or Booking on it, newest first, with
+        // the current year always offered so a fresh period can be started.
+        $years = Sale::query()->selectRaw('YEAR(date) as y')->distinct()->pluck('y')
+            ->merge(Booking::query()->selectRaw('YEAR(date) as y')->distinct()->pluck('y'))
+            ->push((int) date('Y'))
+            ->filter()
+            ->map(fn ($y) => (int) $y)
+            ->unique()
+            ->sortDesc()
+            ->values();
+
+        return response()->json([
+            'teams' => $rows->values(),
+            'grand_total' => $grand,
+            'years' => $years,
+            'period' => ['year' => $year ?: null, 'month' => $month ?: null],
+        ]);
     }
 
-    /** Total Apt/sft/Revenue/Booking/Cancelled Apt for a set of employee ids — shared by the team-level and per-member rows above. */
-    private function statsFor(Collection $employeeIds): array
+    /** Total Apt/sft/Revenue/Booking/Cancelled Apt for a set of employee ids — shared by the team-level and per-member rows above. Filtered to `year` (0 = all time) and, within it, `month` (0 = whole year). */
+    private function statsFor(Collection $employeeIds, int $year = 0, int $month = 0): array
     {
-        $confirmedSales = Sale::whereIn('employee_id', $employeeIds)
+        $salesQuery = Sale::whereIn('employee_id', $employeeIds)
             ->where('status', 'confirmed')
-            ->with('flat')
-            ->get();
+            ->with('flat');
+        $bookingsQuery = Booking::whereIn('employee_id', $employeeIds);
 
-        $bookings = Booking::whereIn('employee_id', $employeeIds)->get();
+        if ($year) {
+            $salesQuery->whereYear('date', $year);
+            $bookingsQuery->whereYear('date', $year);
+            if ($month) {
+                $salesQuery->whereMonth('date', $month);
+                $bookingsQuery->whereMonth('date', $month);
+            }
+        }
+
+        $confirmedSales = $salesQuery->get();
+        $bookings = $bookingsQuery->get();
         $bookingTarget = (float) $bookings->sum('amount');
         $bookingPaid = (float) $bookings->sum('paid_amount');
         $cancelledApt = $bookings->where('status', 'cancelled')->count();

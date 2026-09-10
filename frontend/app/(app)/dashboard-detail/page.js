@@ -19,7 +19,7 @@ function DashboardDetailContent() {
   // summary tables, not lists of units, so they're left out).
   const [filterSearch, setFilterSearch] = useState("");
   const [filterZoneId, setFilterZoneId] = useState("");
-  const showFlatFilters = ["flats", "available", "sold", "soldAmount", "bookingMoney", "due", "cancelled"].includes(detailKey);
+  const showFlatFilters = ["flats", "available", "sold", "soldAmount", "bookingMoney", "cancelled"].includes(detailKey);
 
   if (data.loading) return <LoadingBlock />;
   if (data.error) return <ErrorBanner message={data.error} />;
@@ -66,8 +66,6 @@ function DashboardDetailContent() {
     bodyData = { ...data, confirmedSales: applySaleBookingFilters(data.confirmedSales), activeBookings: applySaleBookingFilters(data.activeBookings) };
   } else if (detailKey === "bookingMoney") {
     bodyData = { ...data, activeBookings: applySaleBookingFilters(data.activeBookings) };
-  } else if (detailKey === "due") {
-    bodyData = { ...data, dueRows: applySaleBookingFilters(data.dueRows) };
   } else if (detailKey === "cancelled") {
     bodyData = { ...data, cancelledBookings: applySaleBookingFilters(data.cancelledBookings) };
   }
@@ -80,7 +78,7 @@ function DashboardDetailContent() {
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-          {/* Owner's request: switch between any of the 9 cards' details
+          {/* Owner's request: switch between any of the cards' details
               right here in the same tab, instead of going back to the
               Dashboard and clicking a different card each time. */}
           <select

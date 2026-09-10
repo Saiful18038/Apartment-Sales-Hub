@@ -105,8 +105,11 @@ export function TeamPieChart({ title, slices, formatValue }) {
  * Dashboard) — fetches /reports/team-summary itself so callers don't need
  * to wire that up separately.
  */
-export default function TeamRevenueBookingPies() {
-  const { data: teamData, loading } = useApi("/reports/team-summary");
+export default function TeamRevenueBookingPies({ year = 0, month = 0 }) {
+  // Reports page passes a {year, month} so the pies track its period
+  // filter; the Dashboard passes nothing and gets the all-time breakdown.
+  const query = year ? `?year=${year}&month=${month}` : "";
+  const { data: teamData, loading } = useApi(`/reports/team-summary${query}`);
   const teamRows = teamData?.teams || [];
 
   if (loading || teamRows.length === 0) return null;

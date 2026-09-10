@@ -18,6 +18,12 @@ class Sale extends Model
     public function payments()  { return $this->hasMany(Payment::class); }
     public function documents() { return $this->morphMany(Document::class, 'documentable'); }
 
+    /** The "Final Price & Payment Schedule" document for this sale. */
+    public function priceSchedule() { return $this->hasOne(PriceSchedule::class); }
+
+    /** Owner-defined extra columns on this sale's Payments "Excel Sheet". */
+    public function sheetColumns() { return $this->hasMany(PaymentSheetColumn::class)->orderBy('sort'); }
+
     public function paidAmount(): float
     {
         return (float) $this->payments()->sum('amount');

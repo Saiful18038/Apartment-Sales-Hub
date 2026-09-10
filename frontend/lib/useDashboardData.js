@@ -10,18 +10,45 @@ import { STATUS, STATUS_ORDER } from "@/lib/status";
  * cards and charts, shared between the Dashboard page itself and the
  * dashboard-detail page each card opens in a new tab — both need the exact
  * same numbers, so this is the one place that computes them.
+ *
+ * The seven responses are cached (in memory + a short-lived localStorage
+ * mirror), so coming back to the Dashboard — or opening a card's detail
+ * tab — paints instantly from the last snapshot and only shows the
+ * full-screen loader the very first time. A background refresh always runs.
  */
+const LS_KEY = "erp.cache:__dashboard__";
+const TTL_MS = 5 * 60 * 1000;
+
+let snapshot = null; // { zones, projects, flats, sales, payments, bookings, activity }
+
+try {
+  if (typeof window !== "undefined") {
+    const raw = window.localStorage.getItem(LS_KEY);
+    if (raw) {
+      const { t, d } = JSON.parse(raw);
+      if (Date.now() - t < TTL_MS) snapshot = d;
+      else window.localStorage.removeItem(LS_KEY);
+    }
+  }
+} catch {
+  /* storage disabled — memory snapshot still works */
+}
+
+function store(next) {
+  snapshot = next;
+  try {
+    window.localStorage.setItem(LS_KEY, JSON.stringify({ t: Date.now(), d: next }));
+  } catch {
+    /* ignore quota / disabled */
+  }
+}
+
 export function useDashboardData() {
-  const [state, setState] = useState({ loading: true, error: "" });
-  const [zones, setZones] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [flats, setFlats] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [activity, setActivity] = useState([]);
+  const [snap, setSnap] = useState(snapshot);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let alive = true;
     (async () => {
       try {
         const [z, p, f, s, pay, book, act] = await Promise.all([
@@ -31,25 +58,26 @@ export function useDashboardData() {
           api.get("/sales"),
           api.get("/payments"),
           api.get("/bookings"),
-          api.get("/activity-logs"),
+          api.get("/activity-logs?limit=12"), // dashboard shows only the latest 6
         ]);
-        setZones(z);
-        setProjects(p);
-        setFlats(f.data || []);
-        setSales(s);
-        setPayments(pay);
-        setBookings(book);
-        setActivity(act);
-        setState({ loading: false, error: "" });
+        const next = {
+          zones: z, projects: p, flats: f.data || [], sales: s,
+          payments: pay, bookings: book, activity: act,
+        };
+        store(next);
+        if (alive) setSnap(next);
       } catch (e) {
-        setState({ loading: false, error: e.message || "Failed to load dashboard." });
+        if (alive && !snapshot) setError(e.message || "Failed to load dashboard.");
       }
     })();
+    return () => { alive = false; };
   }, []);
 
-  if (state.loading || state.error) {
-    return { loading: state.loading, error: state.error };
-  }
+  if (error) return { loading: false, error };
+  if (!snap) return { loading: true, error: "" };
+
+  const { zones, projects, sales, payments, bookings, activity } = snap;
+  const flats = snap.flats;
 
   const byStatus = STATUS_ORDER.map((code) => ({
     code,
